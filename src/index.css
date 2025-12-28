@@ -1,0 +1,28 @@
+:root{
+  --card-bg: #ffffff;
+  --accent: #2563eb; /* blue */
+  --muted: #6b7280;
+  --error: #dc2626;
+  --surface: #f8fafc;
+}
+
+body{
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #eef2ff 0%, #ffffff 100%);
+  padding: 24px;
+}
+
+
+.title{
+  margin: 0 0 12px 0;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+
+/* responsive */
+@media (max-width: 720px){
+  .labelCell{ width: 40%; }
+  .inputCell{ width: 60%; }
+  .specificList{ grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+}

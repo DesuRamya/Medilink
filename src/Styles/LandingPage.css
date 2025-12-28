@@ -1,0 +1,88 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 40px;
+  border-bottom: 2px solid #ddd;
+}
+
+.logo {
+  color: #0a7cff;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.auth-btn {
+   width: auto;
+  padding: 8px 16px;
+  border: 1px solid #0a7cff;
+  background: none;
+  color: #0a7cff;
+  cursor: pointer;
+  border-radius: 5px;
+    white-space: nowrap;
+}
+
+.auth-btn:hover {
+  background-color: #0a7cff;
+  color: white;
+}
+
+/* ===== MAIN ===== */
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 60px;
+}
+
+/* Left Section */
+.about-section {
+  width: 45%;
+}
+
+.about-section h2 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.about-section p {
+  color: #555;
+  line-height: 1.7;
+}
+
+/* Right Section */
+.image-section {
+  width: 45%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.doctor-image {
+  width: 80%;
+  max-width: 400px;
+}
+
+/* ===== FOOTER ===== */
+.footer {
+  border-top: 2px solid #ddd;
+  text-align: center;
+  padding: 12px;
+  font-size: 14px;
+  color: #666;
+}

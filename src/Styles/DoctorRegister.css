@@ -1,0 +1,59 @@
+.doctor-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.doctor-card {
+  width: 400px;
+  padding: 30px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  background: #f9fbff;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.form-row label {
+  width: 40%;
+}
+
+.form-row input,
+.PhoneInput {
+  width: 60%;
+}
+
+.error {
+  color: red;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: not-allowed;
+  background-color: #d3d3d3;   /* default grey */
+  color: #777;
+  transition: background-color 0.3s ease;
+}
+
+/* ✅ when form is valid */
+.submit-btn.active {
+  background-color: #007bff;   /* blue */
+  color: white;
+  cursor: pointer;
+}
+
+.submit-btn:disabled {
+  cursor: not-allowed;
+}

@@ -1,0 +1,242 @@
+.container{
+  max-width: 1000px;
+  margin: 20px auto;
+  background: var(--card-bg);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+  border-radius: 12px;
+  padding: 20px 28px;
+}
+
+.formTable{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.formTable td{
+  vertical-align: top;
+  padding: 10px 12px;
+}
+
+.labelCell{
+  width: 30%;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.inputCell{
+  width: 70%;
+}
+
+.input{
+  width: 95%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #8ba3f4;
+  box-shadow: inset 0 1px 2px rgba(16,24,40,0.02);
+}
+
+.inputCell{
+  text-align: left !important;
+  vertical-align: top;
+}
+
+.input[readonly] {
+  background-color: #f1f5f9 !important;
+  cursor: not-allowed;
+}
+
+.input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.phone-field-container {
+  width: 95%;
+}
+
+.phone-input {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 1px solid #8ba3f4;
+  border-radius: 8px;
+  padding: 6px 10px;
+  height: 38px;
+  box-shadow: inset 0 1px 2px rgba(16,24,40,0.02);
+}
+
+.phone-input input {
+  border:  #8ba3f4 ;
+  outline: none !important;
+  padding-left: 8px;
+  font-size: 14px;
+  width: 100%;
+}
+
+.phone-input .PhoneInputCountry {
+  margin-right: 8px;
+}
+
+.phone-input .PhoneInputCountrySelect {
+  height: 100%;
+}
+
+.select{
+  width: 97%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #8ba3f4;
+}
+
+.errorText{
+  color: var(--error);
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.errorInput{
+  border-color: rgba(220,38,38,0.6);
+}
+
+.submitRow{
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.submitBtn{
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+
+.submitBtn.disabled{
+  background: grey;
+  cursor: not-allowed;
+}
+
+.submitBtn.enabled{
+  background: var(--accent);
+  cursor: pointer;
+}
+
+
+/* Outer PhoneInput container */
+.phone-field-container .PhoneInput {
+  width: 100% ;
+  border-radius: 8px;        /* 🔵 rounded corners */
+  overflow: hidden;         
+}
+
+/* Input box */
+.phone-field-container .PhoneInputInput {
+
+  border-radius: 8px;  /* right side rounded */
+}
+
+/* Country selector (flag section) */
+.phone-field-container .PhoneInputCountry {
+  border-radius: 8px ;  /* left side rounded */
+}
+
+
+.readonly-phone {
+  pointer-events: none; /* fully non-editable */
+}
+
+.readonly-phone .PhoneInputInput {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid  #8ba3f4 !important;
+  cursor: not-allowed;
+}
+
+.readonly-phone .PhoneInputCountry {
+  background-color: #f1f5f9 !important;
+  border: 1px solid #8ba3f4 !important;
+  opacity: 0.7;
+}
+
+.readonly-phone .PhoneInputInput:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ===============================
+   DISEASES – STRICT LEFT ALIGNMENT
+   =============================== */
+
+/* Fix table cell behavior */
+.diseaseTd {
+  text-align: left !important;
+  vertical-align: top !important;
+}
+
+/* Outer diseases container */
+.diseaseContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 10px;
+  border: 1px solid #d0d6e9;
+  border-radius: 18px;
+}
+
+/* Each category card */
+.diseaseGroup {
+  
+  align-items: flex-start;
+  border: 1px solid #8ba3f4;
+  border-radius: 16px;
+  padding: 10px;
+}
+
+/* Category checkbox + name — FORCE LEFT */
+.categoryHeader {
+  display: flex;
+  align-items: left;
+  justify-content: left; /* 🔥 important */
+  gap: 12px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.categoryHeader input {
+  transform: scale(1.2);
+  padding: 10px;
+}
+/* Inner diseases table */
+.diseaseTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-left: 0; /* 🔥 remove centering */
+}
+
+/* Disease column */
+.diseaseCell {
+  width: 50%;
+  padding: 6px 0;
+  vertical-align: top;
+  text-align: left; /* 🔥 */
+}
+
+/* Checkbox + text */
+.diseaseItem {
+  display: flex;
+  align-items: left;
+  justify-content: flex-start; /* 🔥 */
+  gap: 10px;
+  white-space: nowrap;
+}
+
+
+/* Error */
+.errorText {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}

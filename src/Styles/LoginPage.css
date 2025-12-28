@@ -1,0 +1,228 @@
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-box {
+  width: 300px;
+  padding: 25px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  text-align: center;
+}
+
+
+.role-toggle {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.role-toggle button {
+  width: 48%;
+  padding: 8px;
+  border: 1px solid #007bff;
+  background: white;
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.role-toggle .active {
+  background: #007bff;
+  color: white;
+}
+
+input {
+  width: 130px;
+  padding: 8px;
+  margin: 8px 0;
+}
+
+
+.forgot {
+  font-size: 12px;
+  color: blue;
+  cursor: pointer;
+  text-align: right;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.register {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.register span {
+  color: blue;
+  cursor: pointer;
+}
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-box {
+  width: 350px;
+  padding: 30px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #f9fbff;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.role-toggle {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.role-toggle button {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #007bff;
+  background: white;
+  cursor: pointer;
+}
+
+.role-toggle .active {
+  background: #007bff;
+  color: white;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.form-label {
+  width: 40%;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 60%;
+}
+
+/* normal input */
+.form-input input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* react-phone-number-input fix */
+.form-input .PhoneInput {
+  width: 100%;
+}
+
+.form-input .PhoneInputInput {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.forgot {
+  font-size: 13px;
+  color: #007bff;
+  text-align: right;
+  cursor: pointer;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background: #e0e0e0;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.register {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.register span {
+  color: #007bff;
+  cursor: pointer;
+}
+
+/* Mobile responsive layout */
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-label {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+
+  .form-input {
+    width: 100%;
+  }
+}
+
+/* Submit button default (disabled) */
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #d1d5db;   /* grey */
+  color: #6b7280;
+  font-size: 16px;
+  cursor: not-allowed;
+  transition: background-color 0.3s ease;
+}
+
+/* ✅ When enabled (mobile & password entered) */
+.submit-btn:not(:disabled) {
+  background-color: #2563eb;   /* BLUE */
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* Optional hover effect */
+.submit-btn:not(:disabled):hover {
+  background-color: #1d4ed8;
+}
+
+.forgot-password {
+  margin-top: 6px;
+  text-align: right;        /* ✅ right aligned */
+  font-size: 14px;
+  color: #2563eb;           /* ✅ blue color */
+  cursor: pointer;
+  text-decoration: underline; /* ✅ underlined */
+}
+
+/* Optional hover effect */
+.forgot-password:hover {
+  color: #1d4ed8;           /* darker blue on hover */
+}
