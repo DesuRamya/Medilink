@@ -17,38 +17,69 @@ const Login = () => {
     }
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            role,
-            phone: mobile,
-            password
-          })
-        }
-      );
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role,
+          phone: mobile,
+          password,
+        }),
+      });
 
       const data = await response.json();
+      console.log("LOGIN RESPONSE:", data);
 
       if (!response.ok) {
-        alert(data.message);
+        alert(data.message || "Login failed");
         return;
       }
 
-      // ✅ Login successful
-      navigate("/welcome");
+      // Store role
+      localStorage.setItem("role", role);
 
+      // ================= PATIENT =================
+      if (role === "patient") {
+        if (!data.patient || !data.patient._id) {
+          alert("Invalid patient data from server");
+          return;
+        }
+
+        localStorage.setItem("patientToken", "true");
+        localStorage.setItem("patientId", data.patient._id);
+        localStorage.setItem(
+          "patientData",
+          JSON.stringify(data.patient)
+        );
+
+        navigate("/patient-welcome");
+      }
+
+      // ================= DOCTOR =================
+      else {
+        if (!data.doctor || !data.doctor._id) {
+          alert("Invalid doctor data from server");
+          return;
+        }
+
+        localStorage.setItem("doctorToken", "true");
+        localStorage.setItem("doctorId", data.doctor._id);
+        localStorage.setItem(
+          "doctorData",
+          JSON.stringify(data.doctor)
+        );
+
+        navigate("/doctor-welcome");
+      }
     } catch (error) {
-      alert("Server error");
+      console.log("LOGIN ERROR:", error);
+      alert("Server error. Please try again.");
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-box">
-
         <h2>Login</h2>
 
         {/* Role Selector */}
@@ -91,9 +122,12 @@ const Login = () => {
             />
           </div>
         </div>
+
         <p
           className="forgot-password"
-          onClick={() => navigate("/forgot-password", { state: { role } })}
+          onClick={() =>
+            navigate("/forgot-password", { state: { role } })
+          }
         >
           Forgot password?
         </p>
@@ -111,18 +145,15 @@ const Login = () => {
         <p className="register">
           New user?{" "}
           <span
-            onClick={() => {
-              if (role === "patient") {
-                navigate("/register/password", { state: { role: "patient" } });
-              } else {
-                navigate("/register/password", { state: { role: "doctor" } });
-              }
-            }}
+            onClick={() =>
+              navigate("/register/password", {
+                state: { role },
+              })
+            }
           >
             Register
           </span>
         </p>
-
       </div>
     </div>
   );

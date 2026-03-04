@@ -83,7 +83,7 @@ const DoctorRegister = () => {
       }
 
       alert("Doctor registered successfully");
-      Navigate("/welcome");
+      Navigate("/DoctorWelcome");
 
       // Optional: reset form
       setForm({

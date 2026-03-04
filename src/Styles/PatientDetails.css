@@ -1,0 +1,40 @@
+.pd-container {
+  min-height: 100vh;
+  padding: 40px;
+  background: #eef4ff;
+}
+
+.pd-heading {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 25px;
+}
+
+.pd-loading {
+  font-size: 18px;
+  margin-top: 20px;
+}
+
+.pd-box {
+  background: white;
+  padding: 30px;
+  border-radius: 14px;
+  max-width: 750px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.07);
+}
+
+.pd-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.pd-key {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.pd-value {
+  color: #333;
+}

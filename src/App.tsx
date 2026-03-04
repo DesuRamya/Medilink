@@ -7,6 +7,9 @@ import WelcomePage from "./Pages/WelcomePage";
 import ForgotPassword from "./Pages/ForgotPassword";
 import DoctorRegister from "./Pages/DoctorRegister";
 import SetPassword from "./Pages/SetPassword";
+import PatientWelcomePage from "./Pages/PatientWelcomePage";
+import PatientDetails from "./Pages/PatientDetails";
+import DoctorWelcomePage from "./Pages/DoctorWelcomePage";
 
 
 
@@ -20,6 +23,9 @@ function App() {
         <Route path="/register/doctor" element={<DoctorRegister />} />
          <Route path="/OtpVerify" element={<OtpVerify />} />
          <Route path="/welcome" element={<WelcomePage />} />
+         <Route path="/patient-welcome" element={<PatientWelcomePage />} />
+          <Route path="/patientdetails" element={<PatientDetails />} />
+          <Route path="/doctor-welcome" element={<DoctorWelcomePage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register/password" element={<SetPassword />} />
       

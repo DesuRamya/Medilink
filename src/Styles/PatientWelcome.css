@@ -1,0 +1,106 @@
+/* ✅ OUTER BACKGROUND (same as landing) */
+.pw-bg {
+  min-height: 100vh;
+  background: #eef4ff;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+/* ✅ WHITE CARD CONTAINER */
+.pw-card {
+  width: 80%;
+  max-width: 1400px;
+  margin: auto;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
+  padding: 20px 0 15px 0;
+}
+
+/* ✅ NAVBAR */
+.pw-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 70px;
+}
+
+.pw-logo {
+  color: #0a7cff;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* ✅ MENU - not too far */
+.pw-menu {
+  display: flex;
+  gap: 80px;
+  font-size: 20px;
+  font-weight: 500;
+  color: black;
+}
+
+.pw-menu span {
+  cursor: pointer;
+}
+
+.pw-menu span:hover {
+  color: #1177ff;
+}
+
+/* ✅ DIVIDER LINE */
+.pw-divider {
+  width: 92%;
+  margin: auto;
+  border-top: 2px solid #dcdcdc;
+}
+
+/* ✅ BODY */
+.pw-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 100px 70px;
+}
+
+.pw-left {
+  width: 45%;
+  align-items: center;
+}
+
+.pw-left h2 {
+  margin-bottom: 15px;
+  color: #333;}
+
+/* .pw-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 30px;
+  justify-content: center;
+} */
+
+.pw-left p {
+  color: #555;
+  line-height: 1.7;
+}
+
+/* ✅ IMAGE SIDE */
+.pw-right {
+  width: 45%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pw-img {
+  width: 80%;
+  max-width: 400px;
+}
+
+/* ✅ FOOTER */
+.pw-footer {
+  text-align: center;
+  padding: 12px;
+  font-size: 14px;
+  color: #666;
+}

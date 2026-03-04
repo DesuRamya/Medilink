@@ -287,7 +287,7 @@ const navigate = useNavigate();
 
     const data = await res.json();
     alert("Form submitted successfully!");
-    navigate("/welcome");
+    navigate("/PatientWelcomePage");
   } catch (error) {
     console.error(error);
     alert("Failed to submit form");

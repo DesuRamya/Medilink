@@ -44,7 +44,7 @@ const OtpVerify = () => {
         return;
       }
 
-      navigate("/welcome");
+      navigate("/patient-welcome");
     } catch (err) {
       setError("Server error. Please try again.");
     }
