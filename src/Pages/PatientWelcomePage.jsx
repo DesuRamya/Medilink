@@ -20,6 +20,7 @@ useEffect(() => {
 }, []);
   const handleLogout = () => {
     localStorage.removeItem("patientToken");
+    localStorage.removeItem("patientId");
     localStorage.removeItem("patientData");
     navigate("/"); // ✅ landing page
   };
@@ -33,7 +34,7 @@ useEffect(() => {
           <div className="pw-logo">Medilink</div>
 
           <div className="pw-menu">
-            <span onClick={() => navigate("/patientwelcome")}>home</span>
+            <span onClick={() => navigate("/patient-welcome")}>home</span>
             <span onClick={() => navigate("/patientdetails")}>View details</span>
             <span onClick={handleLogout}>logout</span>
           </div>

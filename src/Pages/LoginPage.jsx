@@ -17,7 +17,7 @@ const Login = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch("http://localhost:5050/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -41,7 +41,8 @@ const Login = () => {
       // ================= PATIENT =================
       if (role === "patient") {
         if (!data.patient || !data.patient._id) {
-          alert("Invalid patient data from server");
+          alert("Password verified. Please complete patient profile.");
+          navigate("/register/patient", { state: { phone: mobile } });
           return;
         }
 
@@ -58,7 +59,8 @@ const Login = () => {
       // ================= DOCTOR =================
       else {
         if (!data.doctor || !data.doctor._id) {
-          alert("Invalid doctor data from server");
+          alert("Password verified. Please complete doctor profile.");
+          navigate("/register/doctor", { state: { phone: mobile } });
           return;
         }
 

@@ -24,34 +24,38 @@ const SetPassword = () => {
   const handleSubmit = async () => {
     if (!canSubmit) return;
 
-    const response = await fetch(
-      "http://localhost:5000/api/password/register",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role,
-          phone,
-          password
-        })
+    try {
+      const response = await fetch(
+        "http://localhost:5050/api/password/register",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            role,
+            phone,
+            password
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Request failed");
+        return;
       }
-    );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      setError(data.message);
-      return;
+      alert("Registration successful");
+      if (role === "patient") {
+        navigate("/register/patient", {
+          state: { phone }
+        });
+      } else if (role === "doctor") {
+        navigate("/register/doctor", { state: { phone } });
+      }
+    } catch (err) {
+      setError("Cannot reach backend on http://localhost:5050. Check server and CORS settings.");
     }
-
-    alert("Registration successful");
-    if (role === "patient") {
-  navigate("/register/patient", {
-    state: { phone }
-  });
-} else if (role === "doctor") {
-  navigate("/register/doctor",{state: { phone }});
-}
   };
 
   return (

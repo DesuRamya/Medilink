@@ -1,0 +1,118 @@
+.dpd-page {
+  min-height: 100vh;
+  background: #eef4ff;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+.dpd-content {
+  padding: 40px 70px;
+  min-height: 520px;
+}
+
+.dpd-title {
+  text-align: center;
+  font-size: 34px;
+  margin-bottom: 30px;
+}
+
+.dpd-form {
+  max-width: 760px;
+  margin: 0 auto 30px auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 26px 34px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.dpd-label {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  width: 230px;
+  font-size: 16px;
+}
+
+.dpd-form-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.dpd-input-wrap {
+  flex: 1;
+}
+
+.dpd-form .PhoneInput {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.dpd-form .PhoneInputInput {
+  text-align: left;
+  font-size: 16px;
+  border: 1px solid #c9c9c9;
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+
+.dpd-btn {
+  margin-top: 16px;
+  width: 100%;
+  border: none;
+  background: #1177ff;
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.dpd-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.dpd-box {
+  background: white;
+  padding: 24px;
+  border-radius: 14px;
+  max-width: 900px;
+  margin: 0 auto;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.07);
+}
+
+.dpd-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.dpd-key {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.dpd-value {
+  color: #333;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .dpd-form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dpd-label {
+    width: 100%;
+    font-size: 18px;
+  }
+}

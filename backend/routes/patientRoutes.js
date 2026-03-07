@@ -105,4 +105,150 @@ router.get("/patient/:id", async (req, res) => {
   }
 });
 
+/* =========================================================
+   ✅ 4) Update Patient by ID
+   PUT: /api/patients/patient/:id
+   ========================================================= */
+router.put("/patient/:id", async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    delete updates._id;
+    delete updates.__v;
+    delete updates.createdAt;
+    delete updates.updatedAt;
+
+    const patient = await Patient.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Patient updated successfully",
+      patient,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating patient details",
+      error: error.message,
+    });
+  }
+});
+
+/* =========================================================
+   ✅ 5) Update Patient by Phone (fallback)
+   PUT: /api/patients/patient-by-phone/:phone
+   ========================================================= */
+router.put("/patient-by-phone/:phone", async (req, res) => {
+  try {
+    const phone = decodeURIComponent(req.params.phone);
+    const updates = { ...req.body };
+    delete updates._id;
+    delete updates.__v;
+    delete updates.createdAt;
+    delete updates.updatedAt;
+
+    const patient = await Patient.findOneAndUpdate({ phone }, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Patient updated successfully",
+      patient,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating patient details",
+      error: error.message,
+    });
+  }
+});
+
+/* =========================================================
+   ✅ 6) Fetch Patient by Phone
+   GET: /api/patients/patient-by-phone/:phone
+   ========================================================= */
+router.get("/patient-by-phone/:phone", async (req, res) => {
+  try {
+    const phone = decodeURIComponent(req.params.phone);
+    const patient = await Patient.findOne({ phone });
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      patient,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching patient details",
+      error: error.message,
+    });
+  }
+});
+
+/* =========================================================
+   ✅ 7) Doctor patient lookup by phone
+   POST: /api/patients/doctor-patient-lookup
+   Body: { phone, doctor }
+   ========================================================= */
+router.post("/doctor-patient-lookup", async (req, res) => {
+  try {
+    const { phone, doctor } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required",
+      });
+    }
+
+    const patient = await Patient.findOne({ phone });
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "No patient details with the mobile number found",
+      });
+    }
+
+    // Placeholder audit trail in terminal for doctor access.
+    console.log("Doctor accessed patient details:", doctor || {});
+
+    res.status(200).json({
+      success: true,
+      patient,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching patient details",
+      error: error.message,
+    });
+  }
+});
+
 export default router;

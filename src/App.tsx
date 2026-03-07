@@ -10,7 +10,7 @@ import SetPassword from "./Pages/SetPassword";
 import PatientWelcomePage from "./Pages/PatientWelcomePage";
 import PatientDetails from "./Pages/PatientDetails";
 import DoctorWelcomePage from "./Pages/DoctorWelcomePage";
-
+import DoctorPatientDetails from "./Pages/DoctorPatientDetails";
 
 
 function App() {
@@ -26,6 +26,7 @@ function App() {
          <Route path="/patient-welcome" element={<PatientWelcomePage />} />
           <Route path="/patientdetails" element={<PatientDetails />} />
           <Route path="/doctor-welcome" element={<DoctorWelcomePage />} />
+          <Route path="/doctor/patient-details" element={<DoctorPatientDetails />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register/password" element={<SetPassword />} />
       

@@ -67,7 +67,7 @@ const DoctorRegister = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/doctors/register",
+        "http://localhost:5050/api/doctors/register",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -83,7 +83,7 @@ const DoctorRegister = () => {
       }
 
       alert("Doctor registered successfully");
-      Navigate("/DoctorWelcome");
+      Navigate("/doctor-welcome");
 
       // Optional: reset form
       setForm({

@@ -20,32 +20,55 @@ const yesNoOptions = ['Yes','No'];
 
 export default function PatientFormPage() {
   const location = useLocation();
-const phoneFromRegistration = location.state?.phone;
-const navigate = useNavigate();
+  const phoneFromRegistration = location.state?.phone;
+  const patientToEdit = location.state?.patient || null;
+  const isEditMode = Boolean(location.state?.isEdit && patientToEdit);
+  const navigate = useNavigate();
+
+  const getInitialDiseaseState = (existingDiseases = {}) => {
+    const initialSelectedCategories = {};
+    const initialSpecifics = {};
+
+    Object.entries(existingDiseases || {}).forEach(([category, selectedList]) => {
+      if (Array.isArray(selectedList) && selectedList.length > 0) {
+        initialSelectedCategories[category] = true;
+        initialSpecifics[category] = {};
+        selectedList.forEach((item) => {
+          initialSpecifics[category][item] = true;
+        });
+      }
+    });
+
+    return { initialSelectedCategories, initialSpecifics };
+  };
+
+  const { initialSelectedCategories, initialSpecifics } = getInitialDiseaseState(
+    patientToEdit?.diseases || {}
+  );
 
   const initialForm = {
-    name: '',
-    dateOfBirth: '',
-    age: '',
-    gender: '',
-    bloodGroup: '',
-    phone: phoneFromRegistration || '',
-    alternatePhone: '',
-    address: '',
-    height: '',
-    weight: '',
-    maritalStatus: '',
-    occupation: '',
-    hbTestDate: '',
-    hemoglobin: '',
-    hasBp: '',
-    bpTestDate: '',
-    bp: '',
-    hasDiabetics: '',
-    diabeticTestDate: '',
-    diabetic: '',
-    alcoholic: '',
-    smoker: '',
+    name: patientToEdit?.name || '',
+    dateOfBirth: patientToEdit?.dateOfBirth || '',
+    age: patientToEdit?.age || '',
+    gender: patientToEdit?.gender || '',
+    bloodGroup: patientToEdit?.bloodGroup || '',
+    phone: patientToEdit?.phone || phoneFromRegistration || '',
+    alternatePhone: patientToEdit?.alternatePhone || '',
+    address: patientToEdit?.address || '',
+    height: patientToEdit?.height || '',
+    weight: patientToEdit?.weight || '',
+    maritalStatus: patientToEdit?.maritalStatus || '',
+    occupation: patientToEdit?.occupation || '',
+    hbTestDate: patientToEdit?.hbTestDate || '',
+    hemoglobin: patientToEdit?.hemoglobin || '',
+    hasBp: patientToEdit?.hasBp || '',
+    bpTestDate: patientToEdit?.bpTestDate || '',
+    bp: patientToEdit?.bp || '',
+    hasDiabetics: patientToEdit?.hasDiabetics || '',
+    diabeticTestDate: patientToEdit?.diabeticTestDate || '',
+    diabetic: patientToEdit?.diabetic || '',
+    alcoholic: patientToEdit?.alcoholic || '',
+    smoker: patientToEdit?.smoker || '',
     Diseases:''
   };
 
@@ -53,8 +76,8 @@ const navigate = useNavigate();
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  const [selectedCategories, setSelectedCategories] = useState({});
-  const [specifics, setSpecifics] = useState({});
+  const [selectedCategories, setSelectedCategories] = useState(initialSelectedCategories);
+  const [specifics, setSpecifics] = useState(initialSpecifics);
   const [diseaseErrors, setDiseaseErrors] = useState({});
 
   /* ---------------- HELPERS ---------------- */
@@ -277,22 +300,56 @@ const navigate = useNavigate();
     });
 
     try {
-    const res = await fetch("http://localhost:5000/api/patients", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+      const patientId = patientToEdit?._id || localStorage.getItem("patientId");
+      const isUpdate = isEditMode && patientId;
+      const endpoint = isUpdate
+        ? `http://localhost:5050/api/patients/patient/${patientId}`
+        : "http://localhost:5050/api/patients";
 
-    const data = await res.json();
-    alert("Form submitted successfully!");
-    navigate("/PatientWelcomePage");
-  } catch (error) {
-    console.error(error);
-    alert("Failed to submit form");
-  }  
-};
+      let res = await fetch(endpoint, {
+        method: isUpdate ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (isUpdate && res.status === 404 && payload.phone) {
+        const fallbackEndpoint = `http://localhost:5050/api/patients/patient-by-phone/${encodeURIComponent(payload.phone)}`;
+        res = await fetch(fallbackEndpoint, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      const raw = await res.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { message: `Non-JSON response (${res.status}) from ${endpoint}` };
+      }
+
+      if (!res.ok) {
+        alert(data.message || `Failed to save patient details (${res.status})`);
+        return;
+      }
+
+      if (data.patient?._id) {
+        localStorage.setItem("patientId", data.patient._id);
+        localStorage.setItem("patientData", JSON.stringify(data.patient));
+      }
+
+      alert(isUpdate ? "Details updated successfully!" : "Form submitted successfully!");
+      navigate("/patientdetails");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit form");
+    }  
+  };
 
   const submitEnabled = isFormValid();
 
@@ -300,7 +357,9 @@ const navigate = useNavigate();
 
   return (
     <div className="container">
-      <h1 className="title">Patient Information Form</h1>
+      <h1 className="title">
+        {isEditMode ? "Edit Patient Information" : "Patient Information Form"}
+      </h1>
 
       <form onSubmit={handleSubmit} noValidate>
         <table className="formTable">

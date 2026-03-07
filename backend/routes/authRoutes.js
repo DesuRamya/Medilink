@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import PatientPassword from "../models/PatientPassword.js";
 import DoctorPassword from "../models/DoctorPassword.js";
 import Otp from "../models/Otp.js";
+import Patient from "../models/Patient.js";
+import Doctor from "../models/Doctor.js";
 
 const router = express.Router();
 const generateOtp = () => {
@@ -86,10 +88,20 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // ✅ LOGIN SUCCESS
-    res.json({
+    if (role === "patient") {
+      const patient = await Patient.findOne({ phone });
+      return res.json({
+        success: true,
+        message: "Login successful",
+        patient: patient || { phone }
+      });
+    }
+
+    const doctor = await Doctor.findOne({ phone });
+    return res.json({
       success: true,
-      message: "Login successful"
+      message: "Login successful",
+      doctor: doctor || { phone }
     });
 
   } catch (error) {
