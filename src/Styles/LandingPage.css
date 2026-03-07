@@ -86,3 +86,45 @@
   font-size: 14px;
   color: #666;
 }
+
+@media (max-width: 1024px) {
+  .header {
+    padding: 14px 22px;
+  }
+
+  .main {
+    padding: 38px 22px;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 14px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .main {
+    flex-direction: column;
+    justify-content: center;
+    padding: 22px 14px;
+    gap: 22px;
+  }
+
+  .about-section,
+  .image-section {
+    width: 100%;
+  }
+
+  .image-section {
+    justify-content: center;
+  }
+
+  .doctor-image {
+    width: 70%;
+    max-width: 280px;
+  }
+}

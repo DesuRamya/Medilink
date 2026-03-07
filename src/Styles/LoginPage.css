@@ -226,3 +226,38 @@ h2 {
 .forgot-password:hover {
   color: #1d4ed8;           /* darker blue on hover */
 }
+
+.login-box input {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    padding: 14px;
+    align-items: flex-start;
+    padding-top: 24px;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .login-box {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px 16px;
+  }
+
+  .role-toggle {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-label {
+    font-size: 13px;
+  }
+
+  .submit-btn {
+    font-size: 15px;
+    padding: 10px;
+  }
+}

@@ -1,5 +1,6 @@
 import express from "express";
 import Patient from "../models/Patient.js";
+import { predictHealthRisk } from "../services/healthRiskModel.js";
 
 const router = express.Router();
 
@@ -246,6 +247,46 @@ router.post("/doctor-patient-lookup", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching patient details",
+      error: error.message,
+    });
+  }
+});
+
+/* =========================================================
+   ✅ 8) Predict Health Risk
+   POST: /api/patients/predict-health-risk
+   Body: { patientId? , phone? , patient? }
+   ========================================================= */
+router.post("/predict-health-risk", async (req, res) => {
+  try {
+    const { patientId, phone, patient: rawPatient } = req.body || {};
+    let patient = rawPatient || null;
+
+    if (!patient) {
+      if (patientId) {
+        patient = await Patient.findById(patientId).lean();
+      } else if (phone) {
+        patient = await Patient.findOne({ phone }).lean();
+      }
+    }
+
+    if (!patient) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient data, patientId, or phone is required for prediction",
+      });
+    }
+
+    const prediction = predictHealthRisk(patient);
+
+    res.status(200).json({
+      success: true,
+      prediction,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error generating health risk prediction",
       error: error.message,
     });
   }

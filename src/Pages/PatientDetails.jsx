@@ -24,6 +24,49 @@ const PatientDetails = () => {
     return true;
   };
 
+  const prettyLabel = (text) =>
+    String(text || "")
+      .replace(/_/g, " ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const renderDiseases = (diseases) => {
+    if (!diseases || typeof diseases !== "object") return "Not available";
+
+    const entries = Object.entries(diseases).filter(
+      ([, list]) => Array.isArray(list) && list.length > 0
+    );
+
+    if (entries.length === 0) return "Not available";
+
+    return (
+      <div className="pd-disease-list">
+        {entries.map(([category, list]) => (
+          <div key={category} className="pd-disease-group">
+            <span className="pd-disease-category">{prettyLabel(category)}</span>
+            <span className="pd-disease-items">{list.join(", ")}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderValue = (key, value) => {
+    if (key === "diseases") {
+      return renderDiseases(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value.join(", ");
+    }
+
+    if (value && typeof value === "object") {
+      return JSON.stringify(value);
+    }
+
+    return String(value);
+  };
+
   const displayEntries = patient
     ? Object.entries(patient).filter(
         ([key, value]) => !hiddenKeys.has(key) && hasDisplayValue(value)
@@ -36,7 +79,6 @@ const PatientDetails = () => {
     localStorage.removeItem("patientData");
     navigate("/");
   };
-
 
   useEffect(() => {
     const fetchPatientDetails = async () => {
@@ -106,10 +148,8 @@ const PatientDetails = () => {
           <div className="pd-box">
             {displayEntries.map(([key, value]) => (
               <div className="pd-row" key={key}>
-                <span className="pd-key">{key}</span>
-                <span className="pd-value">
-                  {typeof value === "object" ? JSON.stringify(value) : String(value)}
-                </span>
+                <span className="pd-key">{prettyLabel(key)}</span>
+                <span className="pd-value">{renderValue(key, value)}</span>
               </div>
             ))}
             <div className="pd-actions">
@@ -122,6 +162,12 @@ const PatientDetails = () => {
                 }
               >
                 Edit
+              </button>
+              <button
+                className="pd-risk-btn"
+                onClick={() => navigate("/patient-health-risk", { state: { patient } })}
+              >
+                Predict Health Risk
               </button>
             </div>
           </div>

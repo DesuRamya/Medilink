@@ -61,3 +61,17 @@
   font-size: 13px;
   margin-bottom: 10px;
 }
+
+@media (max-width: 600px) {
+  .otp-container {
+    padding: 14px;
+    align-items: flex-start;
+    padding-top: 24px;
+  }
+
+  .otp-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px 16px;
+  }
+}

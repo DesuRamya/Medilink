@@ -240,3 +240,58 @@
   font-size: 13px;
   color: #dc2626;
 }
+
+@media (max-width: 900px) {
+  .container {
+    margin: 10px auto;
+    padding: 16px 14px;
+    border-radius: 10px;
+  }
+
+  .formTable td {
+    display: block;
+    width: 100%;
+    padding: 6px 0;
+  }
+
+  .labelCell,
+  .inputCell {
+    width: 100%;
+  }
+
+  .labelCell {
+    margin-top: 8px;
+  }
+
+  .input,
+  .phone-field-container,
+  .select {
+    width: 100%;
+  }
+
+  .submitRow {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .diseaseContainer {
+    gap: 12px;
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .diseaseGroup {
+    border-radius: 12px;
+    padding: 8px;
+  }
+
+  .diseaseCell {
+    width: 100%;
+    display: block;
+  }
+
+  .diseaseItem {
+    white-space: normal;
+  }
+}

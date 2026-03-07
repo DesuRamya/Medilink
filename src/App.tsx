@@ -11,6 +11,7 @@ import PatientWelcomePage from "./Pages/PatientWelcomePage";
 import PatientDetails from "./Pages/PatientDetails";
 import DoctorWelcomePage from "./Pages/DoctorWelcomePage";
 import DoctorPatientDetails from "./Pages/DoctorPatientDetails";
+import PatientHealthRiskPage from "./Pages/PatientHealthRiskPage";
 
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
          <Route path="/welcome" element={<WelcomePage />} />
          <Route path="/patient-welcome" element={<PatientWelcomePage />} />
           <Route path="/patientdetails" element={<PatientDetails />} />
+          <Route path="/patient-health-risk" element={<PatientHealthRiskPage />} />
           <Route path="/doctor-welcome" element={<DoctorWelcomePage />} />
           <Route path="/doctor/patient-details" element={<DoctorPatientDetails />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
