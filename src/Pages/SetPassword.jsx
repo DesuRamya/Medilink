@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { apiUrl } from "../lib/api";
 
 const SetPassword = () => {
   const { state } = useLocation();
@@ -25,18 +26,15 @@ const SetPassword = () => {
     if (!canSubmit) return;
 
     try {
-      const response = await fetch(
-        "http://localhost:5050/api/password/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            role,
-            phone,
-            password
-          })
-        }
-      );
+      const response = await fetch(apiUrl("/api/password/register"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role,
+          phone,
+          password
+        })
+      });
 
       const data = await response.json();
 
@@ -54,7 +52,7 @@ const SetPassword = () => {
         navigate("/register/doctor", { state: { phone } });
       }
     } catch (err) {
-      setError("Cannot reach backend on http://localhost:5050. Check server and CORS settings.");
+      setError("Cannot reach backend. Check server and CORS settings.");
     }
   };
 

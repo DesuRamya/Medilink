@@ -37,6 +37,7 @@
   max-width: 1000px;
   margin: 0 auto;
   padding: 28px;
+  width: 100%;
 }
 
 .prp-heading {
@@ -219,5 +220,19 @@
 
   .prp-heading {
     font-size: 22px;
+  }
+
+  .prp-content {
+    padding: 16px 14px;
+  }
+
+  .prp-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .prp-btn-primary,
+  .prp-btn-secondary {
+    width: 100%;
   }
 }

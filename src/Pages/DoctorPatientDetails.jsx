@@ -4,6 +4,7 @@ import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import "../Styles/PatientWelcome.css";
 import "../Styles/DoctorPatientDetails.css";
+import { apiUrl } from "../lib/api";
 
 const DoctorPatientDetails = () => {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ const DoctorPatientDetails = () => {
 
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5050/api/patients/doctor-patient-lookup", {
+      const response = await fetch(apiUrl("/api/patients/doctor-patient-lookup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

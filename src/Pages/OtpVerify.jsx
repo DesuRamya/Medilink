@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../Styles/OtpVerify.css";
+import { apiUrl } from "../lib/api";
 
 const OtpVerify = () => {
   const [otp, setOtp] = useState("");
@@ -9,7 +10,7 @@ const OtpVerify = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { phone, role } = location.state || {};
+  const { phone, role, flow } = location.state || {};
 
   // Safety guard
   if (!phone || !role) {
@@ -31,7 +32,7 @@ const OtpVerify = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:5050/api/auth/verify-otp", {
+      const res = await fetch(apiUrl("/api/auth/verify-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, role, otp })
@@ -44,7 +45,7 @@ const OtpVerify = () => {
         return;
       }
 
-      navigate("/patient-welcome");
+      navigate("/reset-password", { state: { phone, role, flow } });
     } catch (err) {
       setError("Server error. Please try again.");
     }

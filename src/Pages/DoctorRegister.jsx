@@ -4,6 +4,7 @@ import "react-phone-number-input/style.css";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import "../Styles/DoctorRegister.css";
+import { apiUrl } from "../lib/api";
 
 const DoctorRegister = () => {
   const Navigate = useNavigate();
@@ -66,14 +67,11 @@ const DoctorRegister = () => {
     if (!canSubmit) return;
 
     try {
-      const response = await fetch(
-        "http://localhost:5050/api/doctors/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form)
-        }
-      );
+      const response = await fetch(apiUrl("/api/doctors/register"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
 
       const data = await response.json();
 

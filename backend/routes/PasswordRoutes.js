@@ -52,4 +52,47 @@ router.post("/register", async (req, res) => {
   }
 });
 
+router.post("/reset", async (req, res) => {
+  const { role, phone, password } = req.body;
+
+  if (!role || !phone || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "All fields are required"
+    });
+  }
+
+  try {
+    if (role === "patient") {
+      let record = await PatientPassword.findOne({ phone });
+      if (!record) {
+        record = new PatientPassword({ phone, password });
+      } else {
+        record.password = password;
+      }
+      await record.save();
+    }
+
+    if (role === "doctor") {
+      let record = await DoctorPassword.findOne({ phone });
+      if (!record) {
+        record = new DoctorPassword({ phone, password });
+      } else {
+        record.password = password;
+      }
+      await record.save();
+    }
+
+    res.json({
+      success: true,
+      message: "Password reset successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+});
+
 export default router;

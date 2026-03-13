@@ -5,6 +5,7 @@ import "../Styles/PatientWelcome.css";
 const PatientWelcomePage = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState("User");
+  const [menuOpen, setMenuOpen] = useState(false);
 
 useEffect(() => {
   const storedPatient = localStorage.getItem("patientData");
@@ -28,12 +29,47 @@ useEffect(() => {
   return (
     <div className="pw-bg">
       <div className="pw-card">
+        <div className={`pw-menu-overlay ${menuOpen ? "" : "hidden"}`}>
+          <div className="pw-menu-panel">
+            <div className="pw-menu-header">
+              <div className="pw-menu-title">Menu</div>
+              <button
+                type="button"
+                className="pw-menu-close"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                ×
+              </button>
+            </div>
+            <div className="pw-menu-items">
+              <span className="pw-menu-item" onClick={() => navigate("/patient-welcome")}>
+                Home
+              </span>
+              <span className="pw-menu-item" onClick={() => navigate("/patientdetails")}>
+                View details
+              </span>
+              <span className="pw-menu-item" onClick={handleLogout}>
+                Logout
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* ✅ NAVBAR */}
         <div className="pw-navbar">
           <div className="pw-logo">Medilink</div>
 
-          <div className="pw-menu">
+          <button
+            type="button"
+            className="pw-menu-toggle"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+          >
+            <span />
+          </button>
+          <div className={`pw-menu ${menuOpen ? "pw-menu--open" : ""}`}>
             <span onClick={() => navigate("/patient-welcome")}>home</span>
             <span onClick={() => navigate("/patientdetails")}>View details</span>
             <span onClick={handleLogout}>logout</span>

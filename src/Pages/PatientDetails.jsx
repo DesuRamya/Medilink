@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Styles/PatientDetails.css";
 import "../Styles/PatientWelcome.css";
+import { apiUrl } from "../lib/api";
 
 const PatientDetails = () => {
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const hiddenKeys = new Set([
     "_id",
     "__v",
@@ -102,8 +104,8 @@ const PatientDetails = () => {
       try {
         const endpoint =
           patientId && patientId !== "undefined"
-            ? `http://localhost:5050/api/patients/patient/${patientId}`
-            : `http://localhost:5050/api/patients/patient-by-phone/${encodeURIComponent(patientPhone)}`;
+            ? apiUrl(`/api/patients/patient/${patientId}`)
+            : apiUrl(`/api/patients/patient-by-phone/${encodeURIComponent(patientPhone)}`);
 
         const response = await fetch(endpoint);
         const data = await response.json();
@@ -126,9 +128,44 @@ const PatientDetails = () => {
 
   return (
     <div className="pd-container">
+      <div className={`pw-menu-overlay ${menuOpen ? "" : "hidden"}`}>
+        <div className="pw-menu-panel">
+          <div className="pw-menu-header">
+            <div className="pw-menu-title">Menu</div>
+            <button
+              type="button"
+              className="pw-menu-close"
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close menu"
+            >
+              ×
+            </button>
+          </div>
+          <div className="pw-menu-items">
+            <span className="pw-menu-item" onClick={() => navigate("/patient-welcome")}>
+              Home
+            </span>
+            <span className="pw-menu-item" onClick={() => navigate("/patientdetails")}>
+              View details
+            </span>
+            <span className="pw-menu-item" onClick={handleLogout}>
+              Logout
+            </span>
+          </div>
+        </div>
+      </div>
       <div className="pw-navbar">
         <div className="pw-logo">Medilink</div>
-        <div className="pw-menu">
+        <button
+          type="button"
+          className="pw-menu-toggle"
+          onClick={() => setMenuOpen((prev) => !prev)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+        >
+          <span />
+        </button>
+        <div className={`pw-menu ${menuOpen ? "pw-menu--open" : ""}`}>
           <span onClick={() => navigate("/patient-welcome")}>home</span>
           <span onClick={() => navigate("/patientdetails")}>View details</span>
           <span onClick={handleLogout}>logout</span>

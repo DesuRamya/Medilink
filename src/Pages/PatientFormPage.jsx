@@ -12,6 +12,7 @@ import DiseaseGroup from '../components/DiseaseGroup';
 import PhoneField from '../components/phoneField';
 import { diseases, diseaseLabels } from '../data/diseases';
 import { validators } from '../utils/validation';
+import { apiUrl } from '../lib/api';
 
 const genderOptions = ['Male', 'Female', 'Prefer not to say'];
 const bloodGroupOptions = ['A+','A-','B+','B-','O+','O-','AB+','AB-'];
@@ -303,8 +304,8 @@ export default function PatientFormPage() {
       const patientId = patientToEdit?._id || localStorage.getItem("patientId");
       const isUpdate = isEditMode && patientId;
       const endpoint = isUpdate
-        ? `http://localhost:5050/api/patients/patient/${patientId}`
-        : "http://localhost:5050/api/patients";
+        ? apiUrl(`/api/patients/patient/${patientId}`)
+        : apiUrl("/api/patients");
 
       let res = await fetch(endpoint, {
         method: isUpdate ? "PUT" : "POST",
@@ -315,7 +316,9 @@ export default function PatientFormPage() {
       });
 
       if (isUpdate && res.status === 404 && payload.phone) {
-        const fallbackEndpoint = `http://localhost:5050/api/patients/patient-by-phone/${encodeURIComponent(payload.phone)}`;
+        const fallbackEndpoint = apiUrl(
+          `/api/patients/patient-by-phone/${encodeURIComponent(payload.phone)}`
+        );
         res = await fetch(fallbackEndpoint, {
           method: "PUT",
           headers: {

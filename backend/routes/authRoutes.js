@@ -12,37 +12,46 @@ const generateOtp = () => {
 };
 
 router.post("/send-otp", async (req, res) => {
-  const { phone, role } = req.body;
+  try {
+    const { phone, role } = req.body;
 
-  if (!phone || !role) {
-    return res.status(400).json({ message: "Phone and role are required" });
+    if (!phone || !role) {
+      return res.status(400).json({ message: "Phone and role are required" });
+    }
+
+    if (role !== "patient" && role !== "doctor") {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    let user;
+    if (role === "patient") {
+      user = await PatientPassword.findOne({ phone });
+    } else {
+      user = await DoctorPassword.findOne({ phone });
+    }
+
+    if (!user) {
+      return res.status(400).json({ message: "Mobile number not registered" });
+    }
+
+    const otp = generateOtp();
+
+    await Otp.findOneAndUpdate(
+      { phone, role },
+      { otp, phone, role, expiresAt: new Date(Date.now() + 5 * 60 * 1000) },
+      { upsert: true }
+    );
+
+    console.log("🔐 OTP SENT");
+    console.log("Role :", role);
+    console.log("Phone:", phone);
+    console.log("OTP  :", otp);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("SEND OTP ERROR:", error);
+    res.status(500).json({ message: "Server error" });
   }
-
-  let user;
-  if (role === "patient") {
-    user = await PatientPassword.findOne({ phone });
-  } else {
-    user = await DoctorPassword.findOne({ phone });
-  }
-
-  if (!user) {
-    return res.status(400).json({ message: "Mobile number not registered" });
-  }
-
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-  await Otp.findOneAndUpdate(
-    { phone, role },
-    { otp, phone, role, expiresAt: new Date(Date.now() + 5 * 60 * 1000) },
-    { upsert: true }
-  );
-
-  console.log("🔐 OTP SENT");
-  console.log("Role :", role);
-  console.log("Phone:", phone);
-  console.log("OTP  :", otp);
-
-  res.json({ success: true });
 });
 
 

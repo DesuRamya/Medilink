@@ -7,6 +7,7 @@ import WelcomePage from "./Pages/WelcomePage";
 import ForgotPassword from "./Pages/ForgotPassword";
 import DoctorRegister from "./Pages/DoctorRegister";
 import SetPassword from "./Pages/SetPassword";
+import ResetPassword from "./Pages/ResetPassword";
 import PatientWelcomePage from "./Pages/PatientWelcomePage";
 import PatientDetails from "./Pages/PatientDetails";
 import DoctorWelcomePage from "./Pages/DoctorWelcomePage";
@@ -31,6 +32,7 @@ function App() {
           <Route path="/doctor/patient-details" element={<DoctorPatientDetails />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register/password" element={<SetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       
       </Routes>
     </BrowserRouter>

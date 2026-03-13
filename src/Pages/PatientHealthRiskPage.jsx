@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../Styles/PatientWelcome.css";
 import "../Styles/PatientHealthRiskPage.css";
+import { apiUrl } from "../lib/api";
 
 const PatientHealthRiskPage = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const PatientHealthRiskPage = () => {
   const [loadingPatient, setLoadingPatient] = useState(!location.state?.patient);
   const [loadingPrediction, setLoadingPrediction] = useState(false);
   const [error, setError] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const prettyLabel = (text) =>
     String(text || "")
@@ -44,8 +46,8 @@ const PatientHealthRiskPage = () => {
 
     const endpoint =
       patientId && patientId !== "undefined"
-        ? `http://localhost:5050/api/patients/patient/${patientId}`
-        : `http://localhost:5050/api/patients/patient-by-phone/${encodeURIComponent(patientPhone)}`;
+        ? apiUrl(`/api/patients/patient/${patientId}`)
+        : apiUrl(`/api/patients/patient-by-phone/${encodeURIComponent(patientPhone)}`);
 
     const response = await fetch(endpoint);
     const data = await response.json();
@@ -64,7 +66,7 @@ const PatientHealthRiskPage = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5050/api/patients/predict-health-risk", {
+      const response = await fetch(apiUrl("/api/patients/predict-health-risk"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -157,9 +159,45 @@ const PatientHealthRiskPage = () => {
   return (
     <div className="prp-page">
       <div className="prp-header-fixed">
+        <div className={`pw-menu-overlay ${menuOpen ? "" : "hidden"}`}>
+          <div className="pw-menu-panel">
+            <div className="pw-menu-header">
+              <div className="pw-menu-title">Menu</div>
+              <button
+                type="button"
+                className="pw-menu-close"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                ×
+              </button>
+            </div>
+            <div className="pw-menu-items">
+              <span className="pw-menu-item" onClick={() => navigate("/patient-welcome")}>
+                Home
+              </span>
+              <span className="pw-menu-item" onClick={() => navigate("/patientdetails")}>
+                View details
+              </span>
+              <span className="pw-menu-item">Health Risk</span>
+              <span className="pw-menu-item" onClick={handleLogout}>
+                Logout
+              </span>
+            </div>
+          </div>
+        </div>
         <div className="pw-navbar prp-navbar">
           <div className="pw-logo">Medilink</div>
-          <div className="pw-menu">
+          <button
+            type="button"
+            className="pw-menu-toggle"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+          >
+            <span />
+          </button>
+          <div className={`pw-menu ${menuOpen ? "pw-menu--open" : ""}`}>
             <span onClick={() => navigate("/patient-welcome")}>home</span>
             <span onClick={() => navigate("/patientdetails")}>View details</span>
             <span className="prp-active-menu">Health Risk</span>
