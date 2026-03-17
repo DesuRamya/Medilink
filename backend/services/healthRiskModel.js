@@ -201,6 +201,13 @@ const createLabels = (f) => ({
   complicationRisk: f.diseaseCount >= 2 || f.diseaseCategoryCount >= 2,
 });
 
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const generateTrainingSamples = () => {
   const rng = seededRng(20260307);
   const samples = [];
@@ -217,19 +224,19 @@ const generateTrainingSamples = () => {
   ];
 
   prototypes.forEach((p) => {
-    for (let i = 0; i < 70; i += 1) {
+    for (let i = 0; i < 120; i += 1) {
       const f = {
-        age: clamp(Math.round(randNormal(rng, p.age, 8)), 12, 90),
-        systolic: clamp(Math.round(randNormal(rng, p.systolic, 14)), 75, 230),
-        diastolic: clamp(Math.round(randNormal(rng, p.diastolic, 10)), 45, 140),
-        glucose: clamp(Math.round(randNormal(rng, p.glucose, 40)), 45, 450),
-        hemoglobin: clamp(Number(randNormal(rng, p.hemoglobin, 1.3).toFixed(1)), 5.2, 18.5),
+        age: clamp(Math.round(randNormal(rng, p.age, 6)), 12, 90),
+        systolic: clamp(Math.round(randNormal(rng, p.systolic, 10)), 75, 230),
+        diastolic: clamp(Math.round(randNormal(rng, p.diastolic, 7)), 45, 140),
+        glucose: clamp(Math.round(randNormal(rng, p.glucose, 30)), 45, 450),
+        hemoglobin: clamp(Number(randNormal(rng, p.hemoglobin, 1.0).toFixed(1)), 5.2, 18.5),
         hasBp: p.hasBp,
         hasDiabetes: p.hasDiabetes,
         smoker: rng() < 0.18 ? 1 - p.smoker : p.smoker,
         alcoholic: rng() < 0.15 ? 1 - p.alcoholic : p.alcoholic,
-        diseaseCount: clamp(Math.round(randNormal(rng, p.diseaseCount, 1.6)), 0, 12),
-        diseaseCategoryCount: clamp(Math.round(randNormal(rng, p.diseaseCategoryCount, 1.0)), 0, 7),
+        diseaseCount: clamp(Math.round(randNormal(rng, p.diseaseCount, 1.2)), 0, 12),
+        diseaseCategoryCount: clamp(Math.round(randNormal(rng, p.diseaseCategoryCount, 0.8)), 0, 7),
       };
 
       const labels = createLabels(f);
@@ -238,6 +245,44 @@ const generateTrainingSamples = () => {
   });
 
   return samples;
+};
+
+const loadTrainingSamplesFromCsv = () => {
+  const csvPath = path.join(__dirname, "..", "data", "training-samples.csv");
+  if (!fs.existsSync(csvPath)) {
+    throw new Error(`Training CSV not found at ${csvPath}`);
+  }
+
+  const raw = fs.readFileSync(csvPath, "utf8").trim();
+  if (!raw) return [];
+
+  const [headerLine, ...lines] = raw.split(/\r?\n/);
+  const headers = headerLine.split(",").map((h) => h.trim());
+  const labelPrefix = "label_";
+
+  const featureKeys = headers.filter((h) => !h.startsWith(labelPrefix));
+  const labelKeys = headers
+    .filter((h) => h.startsWith(labelPrefix))
+    .map((h) => h.slice(labelPrefix.length));
+
+  return lines.map((line) => {
+    const cols = line.split(",").map((c) => c.trim());
+    const features = {};
+    const labels = {};
+
+    featureKeys.forEach((key, idx) => {
+      const value = cols[idx];
+      features[key] = value === "" ? null : Number(value);
+    });
+
+    labelKeys.forEach((key, i) => {
+      const idx = featureKeys.length + i;
+      const value = cols[idx];
+      labels[key] = Number(value) === 1;
+    });
+
+    return { features, labels };
+  });
 };
 
 const gaussianLogPdf = (x, mean, variance) => {
@@ -290,7 +335,7 @@ const predictBinaryProbability = (model, featureVector) => {
   return exp1 / (exp0 + exp1);
 };
 
-const TRAINING_SAMPLES = generateTrainingSamples();
+const TRAINING_SAMPLES = loadTrainingSamplesFromCsv();
 const CONDITION_MODELS = CONDITION_CATALOG.reduce((acc, entry) => {
   acc[entry.key] = trainBinaryGaussianNB(TRAINING_SAMPLES, entry.key);
   return acc;
@@ -302,6 +347,82 @@ const globalFeatureMeans = FEATURES.reduce((acc, feature) => {
     TRAINING_SAMPLES.length;
   return acc;
 }, {});
+
+const evaluateModel = () => {
+  if (!TRAINING_SAMPLES.length) {
+    console.warn("HealthRiskModel: No training samples available for evaluation.");
+    return;
+  }
+
+  const rng = seededRng(20260307);
+  const shuffled = [...TRAINING_SAMPLES];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  const splitIndex = Math.floor(shuffled.length * 0.8);
+  const trainSet = shuffled.slice(0, splitIndex);
+  const testSet = shuffled.slice(splitIndex);
+
+  const evalModels = CONDITION_CATALOG.reduce((acc, entry) => {
+    acc[entry.key] = trainBinaryGaussianNB(trainSet, entry.key);
+    return acc;
+  }, {});
+
+  const totals = CONDITION_CATALOG.reduce((acc, entry) => {
+    acc[entry.key] = { correct: 0, total: 0 };
+    return acc;
+  }, {});
+
+  const thresholds = {};
+  CONDITION_CATALOG.forEach((entry) => {
+    let bestThreshold = 0.5;
+    let bestAccuracy = -1;
+    for (let t = 0.01; t <= 0.99; t += 0.01) {
+      let correct = 0;
+      let total = 0;
+      trainSet.forEach((sample) => {
+        const probability = predictBinaryProbability(evalModels[entry.key], sample.features);
+        const predicted = probability >= t;
+        const actual = Boolean(sample.labels[entry.key]);
+        total += 1;
+        if (predicted === actual) correct += 1;
+      });
+      const accuracy = total ? correct / total : 0;
+      if (accuracy > bestAccuracy) {
+        bestAccuracy = accuracy;
+        bestThreshold = t;
+      }
+    }
+    thresholds[entry.key] = bestThreshold;
+  });
+
+  testSet.forEach((sample) => {
+    CONDITION_CATALOG.forEach((entry) => {
+      const probability = predictBinaryProbability(evalModels[entry.key], sample.features);
+      const predicted = probability >= thresholds[entry.key];
+      const actual = Boolean(sample.labels[entry.key]);
+      totals[entry.key].total += 1;
+      if (predicted === actual) totals[entry.key].correct += 1;
+    });
+  });
+
+  const perLabel = CONDITION_CATALOG.map((entry) => {
+    const stats = totals[entry.key];
+    const accuracy = stats.total ? stats.correct / stats.total : 0;
+    return { key: entry.key, condition: entry.condition, accuracy };
+  });
+
+  const macroAccuracy =
+    perLabel.reduce((sum, item) => sum + item.accuracy, 0) / perLabel.length;
+
+  console.log(
+    `HealthRiskModel overall accuracy: ${(macroAccuracy * 100).toFixed(1)}%`
+  );
+};
+
+evaluateModel();
 
 const enrichReasons = (patient, conditionKey) => {
   const reasons = [];
