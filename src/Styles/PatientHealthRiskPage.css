@@ -1,6 +1,6 @@
 .prp-page {
   min-height: 100vh;
-  background: #eef4ff;
+  background: var(--page-gradient);
 }
 
 .prp-header-fixed {
@@ -21,7 +21,7 @@
 }
 
 .prp-active-menu {
-  color: #1177ff;
+  color: var(--primary);
   font-weight: 700;
 }
 
@@ -66,7 +66,7 @@
 }
 
 .prp-risk-item {
-  background: #f8fafc;
+  background: var(--surface);
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 14px;
@@ -98,9 +98,9 @@
 
 .prp-disease-category {
   font-weight: 700;
-  background: #dbeafe;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  background: var(--pill-bg);
+  color: var(--primary-strong);
+  border: 1px solid var(--pill-border);
   border-radius: 999px;
   padding: 2px 10px;
   white-space: nowrap;
@@ -129,9 +129,9 @@
 
 .prp-reason-key {
   font-weight: 700;
-  background: #dbeafe;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  background: var(--pill-bg);
+  color: var(--primary-strong);
+  border: 1px solid var(--pill-border);
   border-radius: 999px;
   padding: 2px 10px;
   white-space: nowrap;
@@ -165,11 +165,11 @@
 }
 
 .prp-btn-primary {
-  background: #0f766e;
+  background: var(--primary);
 }
 
 .prp-btn-secondary {
-  background: #2563eb;
+  background: var(--primary);
 }
 
 .prp-btn-primary:disabled {

@@ -1,8 +1,36 @@
 import express from "express";
 import Patient from "../models/Patient.js";
 import { predictHealthRisk } from "../services/healthRiskModel.js";
+import { generatePatientSummaryPdf } from "../services/patientSummaryPdf.js";
+import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, "..", "uploads", "prescriptions");
+fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "");
+    const safeExt = ext && ext.length <= 10 ? ext : "";
+    cb(null, `patient_${req.params.id}_${Date.now()}${safeExt}`);
+  },
+});
+
+const fileFilter = (_req, file, cb) => {
+  if (file.mimetype && file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed"));
+  }
+};
+
+const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
 /* =========================================================
    ✅ 1) Register / Add Patient
@@ -10,7 +38,9 @@ const router = express.Router();
    ========================================================= */
 router.post("/", async (req, res) => {
   try {
-    const patient = new Patient(req.body);
+    const payload = { ...req.body };
+    delete payload.prescriptions;
+    const patient = new Patient(payload);
     await patient.save();
 
     res.status(201).json({
@@ -117,11 +147,16 @@ router.put("/patient/:id", async (req, res) => {
     delete updates.__v;
     delete updates.createdAt;
     delete updates.updatedAt;
+    delete updates.prescriptions;
 
-    const patient = await Patient.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-      runValidators: true,
-    });
+    const patient = await Patient.findByIdAndUpdate(
+      req.params.id,
+      { $set: updates, $unset: { prescriptions: "" } },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!patient) {
       return res.status(404).json({
@@ -156,11 +191,16 @@ router.put("/patient-by-phone/:phone", async (req, res) => {
     delete updates.__v;
     delete updates.createdAt;
     delete updates.updatedAt;
+    delete updates.prescriptions;
 
-    const patient = await Patient.findOneAndUpdate({ phone }, updates, {
-      new: true,
-      runValidators: true,
-    });
+    const patient = await Patient.findOneAndUpdate(
+      { phone },
+      { $set: updates, $unset: { prescriptions: "" } },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!patient) {
       return res.status(404).json({
@@ -287,6 +327,171 @@ router.post("/predict-health-risk", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error generating health risk prediction",
+      error: error.message,
+    });
+  }
+});
+
+/* =========================================================
+   ✅ 9) Download Patient Summary PDF (Time Window)
+   POST: /api/patients/patient/:id/summary-pdf
+   Body: { fromDate, toDate }
+   ========================================================= */
+router.post("/patient/:id/summary-pdf", async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.body || {};
+    const from = fromDate ? new Date(fromDate) : null;
+    const to = toDate ? new Date(toDate) : null;
+
+    if (fromDate && Number.isNaN(from.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format for fromDate",
+      });
+    }
+    if (toDate && Number.isNaN(to.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format for toDate",
+      });
+    }
+    if (from && to && from > to) {
+      return res.status(400).json({
+        success: false,
+        message: "fromDate must be earlier than or equal to toDate",
+      });
+    }
+
+    const patient = await Patient.findById(req.params.id).lean();
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    const rangeEnabled = Boolean(fromDate || toDate);
+    const effectiveFrom = fromDate || null;
+    const effectiveTo = toDate || null;
+
+    const pdfBuffer = await generatePatientSummaryPdf(patient, {
+      fromDate: effectiveFrom,
+      toDate: effectiveTo,
+    });
+    const filename = rangeEnabled
+      ? `Patient_Summary_${effectiveFrom}_to_${effectiveTo}.pdf`
+      : "Patient_Summary.pdf";
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    return res.status(200).send(pdfBuffer);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error generating summary PDF",
+      error: error.message,
+    });
+  }
+});
+
+/* =========================================================
+   ✅ 10) Upload Prescription Image (Doctor)
+   POST: /api/patients/patient/:id/prescription-image
+   FormData: { image }
+   ========================================================= */
+router.post("/patient/:id/prescription-image", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No image uploaded",
+      });
+    }
+
+    const existing = await Patient.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    if (existing.prescriptionImage) {
+      const oldPath = existing.prescriptionImage.startsWith("/")
+        ? existing.prescriptionImage.slice(1)
+        : existing.prescriptionImage;
+      const absoluteOldPath = path.join(__dirname, "..", oldPath);
+      if (fs.existsSync(absoluteOldPath)) {
+        fs.unlinkSync(absoluteOldPath);
+      }
+    }
+
+    const patient = await Patient.findByIdAndUpdate(
+      req.params.id,
+      { prescriptionImage: `/uploads/prescriptions/${req.file.filename}` },
+      { new: true }
+    );
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Prescription image uploaded",
+      patient,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error uploading prescription image",
+      error: error.message,
+    });
+  }
+});
+
+/* =========================================================
+   ✅ 11) Delete Prescription Image
+   DELETE: /api/patients/patient/:id/prescription-image
+   ========================================================= */
+router.delete("/patient/:id/prescription-image", async (req, res) => {
+  try {
+    const patient = await Patient.findById(req.params.id);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    if (patient.prescriptionImage) {
+      const relativePath = patient.prescriptionImage.startsWith("/")
+        ? patient.prescriptionImage.slice(1)
+        : patient.prescriptionImage;
+      const absolutePath = path.join(__dirname, "..", relativePath);
+      if (fs.existsSync(absolutePath)) {
+        fs.unlinkSync(absolutePath);
+      }
+    }
+
+    const updated = await Patient.findByIdAndUpdate(
+      req.params.id,
+      { $set: { prescriptionImage: null }, $unset: { prescriptions: "" } },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Prescription image deleted",
+      patient: updated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting prescription image",
       error: error.message,
     });
   }

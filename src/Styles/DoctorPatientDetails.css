@@ -1,6 +1,6 @@
 .dpd-page {
   min-height: 100vh;
-  background: #eef4ff;
+  background: var(--page-gradient);
   margin: 0;
   padding: 0;
   display: flex;
@@ -65,7 +65,7 @@
   margin-top: 16px;
   width: 100%;
   border: none;
-  background: #1177ff;
+  background: var(--primary);
   color: #fff;
   padding: 12px;
   border-radius: 8px;
@@ -89,6 +89,49 @@
   width: 100%;
 }
 
+.dpd-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dpd-actions-bottom {
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
+.dpd-actions .dpd-edit-btn,
+.dpd-actions .dpd-summary-btn {
+  width: auto;
+  padding: 10px 18px;
+}
+
+.dpd-edit-btn {
+  border: none;
+  background: var(--primary);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.dpd-summary-btn {
+  border: none;
+  background: var(--primary-strong);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.dpd-summary-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .dpd-row {
   display: flex;
   justify-content: space-between;
@@ -105,6 +148,74 @@
 .dpd-value {
   color: #333;
   text-align: right;
+}
+
+.dpd-prescription-image {
+  position: relative;
+  max-width: 320px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 6px;
+  background: var(--surface);
+}
+
+.dpd-prescription-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+.dpd-prescription-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: rgba(220, 38, 38, 0.9);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.dpd-prescription-image:hover .dpd-prescription-delete {
+  opacity: 1;
+}
+
+.pd-disease-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.pd-disease-group {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: start;
+  column-gap: 10px;
+}
+
+.pd-disease-category {
+  font-weight: 700;
+  background: var(--pill-bg);
+  color: var(--primary-strong);
+  border: 1px solid var(--pill-border);
+  border-radius: 999px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
+.pd-disease-items {
+  color: #334155;
+  text-align: left;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 @media (max-width: 900px) {
@@ -140,6 +251,11 @@
   .dpd-value {
     text-align: left;
     word-break: break-word;
+  }
+
+  .pd-disease-group {
+    grid-template-columns: 1fr;
+    row-gap: 6px;
   }
 }
 

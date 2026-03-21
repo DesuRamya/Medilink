@@ -9,6 +9,7 @@ const PatientDetails = () => {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const hiddenKeys = new Set([
     "_id",
     "__v",
@@ -58,6 +59,23 @@ const PatientDetails = () => {
       return renderDiseases(value);
     }
 
+    if (key === "prescriptionImage") {
+      const src = String(value || "");
+      if (!src) return "Not available";
+      return (
+        <div className="pd-prescription-image">
+          <img src={apiUrl(src)} alt="Prescription" />
+          <button
+            type="button"
+            className="pd-prescription-delete"
+            onClick={handleDeletePrescriptionImage}
+          >
+            Delete
+          </button>
+        </div>
+      );
+    }
+
     if (Array.isArray(value)) {
       return value.join(", ");
     }
@@ -80,6 +98,69 @@ const PatientDetails = () => {
     localStorage.removeItem("patientId");
     localStorage.removeItem("patientData");
     navigate("/");
+  };
+
+  const handleDownloadSummary = async () => {
+    if (!patient?._id) {
+      alert("Patient information not loaded yet.");
+      return;
+    }
+
+    try {
+      setSummaryLoading(true);
+      const response = await fetch(
+        apiUrl(`/api/patients/patient/${patient._id}/summary-pdf`),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        alert(data.message || "Failed to generate summary PDF");
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Patient_Summary.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Error downloading summary PDF");
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const handleDeletePrescriptionImage = async () => {
+    if (!patient?._id) return;
+    const ok = window.confirm("Delete prescription image?");
+    if (!ok) return;
+
+    try {
+      const response = await fetch(
+        apiUrl(`/api/patients/patient/${patient._id}/prescription-image`),
+        { method: "DELETE" }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        alert(data.message || "Failed to delete prescription image");
+        return;
+      }
+      setPatient(data.patient || { ...patient, prescriptionImage: null });
+      if (data.patient?._id) {
+        localStorage.setItem("patientData", JSON.stringify(data.patient));
+      }
+    } catch (err) {
+      alert("Error deleting prescription image");
+    }
   };
 
   useEffect(() => {
@@ -205,6 +286,13 @@ const PatientDetails = () => {
                 onClick={() => navigate("/patient-health-risk", { state: { patient } })}
               >
                 Predict Health Risk
+              </button>
+              <button
+                className="pd-summary-btn"
+                onClick={handleDownloadSummary}
+                disabled={summaryLoading}
+              >
+                {summaryLoading ? "Preparing..." : "Download PDF"}
               </button>
             </div>
           </div>

@@ -74,7 +74,7 @@ button:disabled {
   padding: 30px;
   border-radius: 10px;
   border: 1px solid #ddd;
-  background: #f9fbff;
+  background: var(--page-gradient);
 }
 
 h2 {
@@ -217,28 +217,28 @@ h2 {
 
 /* ✅ When enabled (mobile & password entered) */
 .submit-btn:not(:disabled) {
-  background-color: #2563eb;   /* BLUE */
+  background-color: var(--primary);   /* BLUE */
   color: #ffffff;
   cursor: pointer;
 }
 
 /* Optional hover effect */
 .submit-btn:not(:disabled):hover {
-  background-color: #1d4ed8;
+  background-color: var(--primary-strong);
 }
 
 .forgot-password {
   margin-top: 6px;
   text-align: right;        /* ✅ right aligned */
   font-size: 14px;
-  color: #2563eb;           /* ✅ blue color */
+  color: var(--primary);           /* ✅ blue color */
   cursor: pointer;
   text-decoration: underline; /* ✅ underlined */
 }
 
 /* Optional hover effect */
 .forgot-password:hover {
-  color: #1d4ed8;           /* darker blue on hover */
+  color: var(--primary-strong);           /* darker blue on hover */
 }
 
 .login-box input {

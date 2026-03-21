@@ -24,6 +24,7 @@ export default function PatientFormPage() {
   const phoneFromRegistration = location.state?.phone;
   const patientToEdit = location.state?.patient || null;
   const isEditMode = Boolean(location.state?.isEdit && patientToEdit);
+  const fromDoctor = Boolean(location.state?.fromDoctor);
   const navigate = useNavigate();
 
   const getInitialDiseaseState = (existingDiseases = {}) => {
@@ -80,6 +81,10 @@ export default function PatientFormPage() {
   const [selectedCategories, setSelectedCategories] = useState(initialSelectedCategories);
   const [specifics, setSpecifics] = useState(initialSpecifics);
   const [diseaseErrors, setDiseaseErrors] = useState({});
+  const [prescriptionFile, setPrescriptionFile] = useState(null);
+  const [prescriptionPreview, setPrescriptionPreview] = useState(
+    patientToEdit?.prescriptionImage ? apiUrl(patientToEdit.prescriptionImage) : ""
+  );
 
   /* ---------------- HELPERS ---------------- */
 
@@ -135,13 +140,29 @@ export default function PatientFormPage() {
   };
 
   const handleAlternatePhoneChange = (value) => {
+    const normalized = value || "";
     setTouched(prev => ({ ...prev, alternatePhone: true }));
-    setForm(prev => prev.alternatePhone === value ? prev : { ...prev, alternatePhone: value });
+    setForm(prev => prev.alternatePhone === normalized ? prev : { ...prev, alternatePhone: normalized });
     setErrors(prev => ({
       ...prev,
-      alternatePhone: validators.alternatePhone(value, form)
+      alternatePhone: validators.alternatePhone(normalized, form)
     }));
   };
+
+  const handlePrescriptionFileChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setPrescriptionFile(file);
+    if (!file) {
+      setPrescriptionPreview(
+        patientToEdit?.prescriptionImage ? apiUrl(patientToEdit.prescriptionImage) : ""
+      );
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setPrescriptionPreview(reader.result || "");
+    reader.readAsDataURL(file);
+  };
+
 
   /* ---------------- DISEASE HANDLING ---------------- */
 
@@ -341,13 +362,40 @@ export default function PatientFormPage() {
         return;
       }
 
-      if (data.patient?._id) {
-        localStorage.setItem("patientId", data.patient._id);
-        localStorage.setItem("patientData", JSON.stringify(data.patient));
+      let updatedPatient = data.patient || payload;
+
+      if (prescriptionFile && (updatedPatient?._id || patientId)) {
+        const targetId = updatedPatient?._id || patientId;
+        const formData = new FormData();
+        formData.append("image", prescriptionFile);
+        const uploadRes = await fetch(
+          apiUrl(`/api/patients/patient/${targetId}/prescription-image`),
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+        const uploadData = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok) {
+          alert(uploadData.message || "Failed to upload prescription image");
+          return;
+        }
+        updatedPatient = uploadData.patient || updatedPatient;
+      }
+
+      if (!fromDoctor && updatedPatient?._id) {
+        localStorage.setItem("patientId", updatedPatient._id);
+        localStorage.setItem("patientData", JSON.stringify(updatedPatient));
       }
 
       alert(isUpdate ? "Details updated successfully!" : "Form submitted successfully!");
-      navigate("/patientdetails");
+      if (fromDoctor) {
+        navigate("/doctor/patient-details", {
+          state: { patient: updatedPatient, phone: payload.phone }
+        });
+      } else {
+        navigate("/patientdetails");
+      }
     } catch (error) {
       console.error(error);
       alert("Failed to submit form");
@@ -407,6 +455,28 @@ export default function PatientFormPage() {
 
             <SelectField label="Alcoholic" name="alcoholic" options={yesNoOptions} value={form.alcoholic} onChange={handleInputChange} />
             <SelectField label="Smoker" name="smoker" options={yesNoOptions} value={form.smoker} onChange={handleInputChange} />
+
+            {(fromDoctor || isEditMode) && (
+              <tr>
+                <td className="labelCell">
+                  <label htmlFor="prescriptionImage">Prescription Image</label>
+                </td>
+                <td className="inputCell">
+                  <input
+                    id="prescriptionImage"
+                    name="prescriptionImage"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePrescriptionFileChange}
+                  />
+                  {prescriptionPreview && (
+                    <div className="prescription-preview">
+                      <img src={prescriptionPreview} alt="Prescription preview" />
+                    </div>
+                  )}
+                </td>
+              </tr>
+            )}
 
           </tbody>
         </table>

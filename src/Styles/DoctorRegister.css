@@ -10,7 +10,7 @@
   padding: 30px;
   border-radius: 10px;
   border: 1px solid #ccc;
-  background: #f9fbff;
+  background: var(--page-gradient);
 }
 
 .form-row {

@@ -41,6 +41,7 @@ otpExpiresAt: {
     smoker: String,
 
     diseases: Object,
+    prescriptionImage: String,
 
   },
   { timestamps: true }

@@ -9,6 +9,7 @@ import patientRoutes from "./routes/patientRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import passwordRoutes from "./routes/PasswordRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,8 @@ app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 app.use(express.json());
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
@@ -46,6 +49,7 @@ app.use("/api/doctors", doctorRoutes);
 
 app.use("/api/password", passwordRoutes);
 
+app.use("/api/chat", chatRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>

@@ -13,6 +13,7 @@ import PatientDetails from "./Pages/PatientDetails";
 import DoctorWelcomePage from "./Pages/DoctorWelcomePage";
 import DoctorPatientDetails from "./Pages/DoctorPatientDetails";
 import PatientHealthRiskPage from "./Pages/PatientHealthRiskPage";
+import ChatBot from "./components/ChatBot";
 
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
       
       </Routes>
+      <ChatBot />
     </BrowserRouter>
   );
 }

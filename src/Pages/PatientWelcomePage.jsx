@@ -7,18 +7,21 @@ const PatientWelcomePage = () => {
   const [userName, setUserName] = useState("User");
   const [menuOpen, setMenuOpen] = useState(false);
 
-useEffect(() => {
-  const storedPatient = localStorage.getItem("patientData");
+  useEffect(() => {
+    const storedPatient = localStorage.getItem("patientData");
 
-  let patientData = null;
-  try {
-    if (storedPatient && storedPatient !== "undefined") {
-      patientData = JSON.parse(storedPatient);
+    let patientData = null;
+    try {
+      if (storedPatient && storedPatient !== "undefined") {
+        patientData = JSON.parse(storedPatient);
+      }
+    } catch (e) {
+      patientData = null;
     }
-  } catch (e) {
-    patientData = null;
-  }
-}, []);
+
+    const name = patientData?.name?.trim();
+    setUserName(name || "User");
+  }, []);
   const handleLogout = () => {
     localStorage.removeItem("patientToken");
     localStorage.removeItem("patientId");
