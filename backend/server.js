@@ -10,6 +10,7 @@ import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import passwordRoutes from "./routes/PasswordRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +51,7 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/password", passwordRoutes);
 
 app.use("/api/chat", chatRoutes);
+app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>

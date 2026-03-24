@@ -6,6 +6,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import AuditLog from "../models/AuditLog.js";
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -84,6 +85,13 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    if (patient.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Patient account is disabled",
+      });
+    }
+
     // ✅ check password (plain text check)
     if (patient.password !== password) {
       return res.status(401).json({
@@ -93,6 +101,19 @@ router.post("/login", async (req, res) => {
     }
 
     // ✅ success
+    try {
+      await AuditLog.create({
+        actorType: "patient",
+        actorId: String(patient._id),
+        action: "login",
+        targetType: "patient",
+        targetId: String(patient._id),
+        meta: { phone },
+      });
+    } catch (error) {
+      console.error("Audit log error:", error?.message || error);
+    }
+
     res.status(200).json({
       success: true,
       message: "Login successful",

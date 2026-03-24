@@ -5,10 +5,27 @@ import DoctorPassword from "../models/DoctorPassword.js";
 import Otp from "../models/Otp.js";
 import Patient from "../models/Patient.js";
 import Doctor from "../models/Doctor.js";
+import AuditLog from "../models/AuditLog.js";
 
 const router = express.Router();
 const generateOtp = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+const logLogin = async ({ role, user, phone }) => {
+  try {
+    const targetId = user && user._id ? String(user._id) : `phone:${phone}`;
+    await AuditLog.create({
+      actorType: role,
+      actorId: user && user._id ? String(user._id) : null,
+      action: "login",
+      targetType: role,
+      targetId,
+      meta: { phone },
+    });
+  } catch (error) {
+    console.error("Audit log error:", error?.message || error);
+  }
 };
 
 router.post("/send-otp", async (req, res) => {
@@ -99,6 +116,13 @@ router.post("/login", async (req, res) => {
 
     if (role === "patient") {
       const patient = await Patient.findOne({ phone });
+      if (patient && patient.isActive === false) {
+        return res.status(403).json({
+          success: false,
+          message: "Patient account is disabled"
+        });
+      }
+      await logLogin({ role: "patient", user: patient, phone });
       return res.json({
         success: true,
         message: "Login successful",
@@ -107,6 +131,13 @@ router.post("/login", async (req, res) => {
     }
 
     const doctor = await Doctor.findOne({ phone });
+    if (doctor && doctor.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Doctor account is disabled"
+      });
+    }
+    await logLogin({ role: "doctor", user: doctor, phone });
     return res.json({
       success: true,
       message: "Login successful",

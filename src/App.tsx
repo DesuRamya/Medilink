@@ -14,6 +14,8 @@ import DoctorWelcomePage from "./Pages/DoctorWelcomePage";
 import DoctorPatientDetails from "./Pages/DoctorPatientDetails";
 import PatientHealthRiskPage from "./Pages/PatientHealthRiskPage";
 import ChatBot from "./components/ChatBot";
+import AdminLogin from "./Pages/AdminLogin";
+import AdminDashboard from "./Pages/AdminDashboard";
 
 
 function App() {
@@ -34,6 +36,8 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register/password" element={<SetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       
       </Routes>
       <ChatBot />
