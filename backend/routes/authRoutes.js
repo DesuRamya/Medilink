@@ -28,6 +28,22 @@ const logLogin = async ({ role, user, phone }) => {
   }
 };
 
+const logLoginFailure = async ({ role, phone, reason }) => {
+  try {
+    if (!phone) return;
+    await AuditLog.create({
+      actorType: role || "unknown",
+      actorId: null,
+      action: "login_failed",
+      targetType: role || "unknown",
+      targetId: `phone:${phone}`,
+      meta: { phone, reason },
+    });
+  } catch (error) {
+    console.error("Audit log error:", error?.message || error);
+  }
+};
+
 router.post("/send-otp", async (req, res) => {
   try {
     const { phone, role } = req.body;
@@ -76,6 +92,7 @@ router.post("/login", async (req, res) => {
   const { role, phone, password } = req.body;
 
   if (!role || !phone || !password) {
+    await logLoginFailure({ role, phone, reason: "missing_fields" });
     return res.status(400).json({
       success: false,
       message: "All fields are required"
@@ -91,6 +108,7 @@ router.post("/login", async (req, res) => {
     } else if (role === "doctor") {
       user = await DoctorPassword.findOne({ phone });
     } else {
+      await logLoginFailure({ role, phone, reason: "invalid_role" });
       return res.status(400).json({
         success: false,
         message: "Invalid role"
@@ -99,6 +117,7 @@ router.post("/login", async (req, res) => {
 
     // ❌ Mobile not registered
     if (!user) {
+      await logLoginFailure({ role, phone, reason: "phone_not_registered" });
       return res.status(400).json({
         success: false,
         message: "Mobile number not registered"
@@ -108,6 +127,7 @@ router.post("/login", async (req, res) => {
     // ❌ Password mismatch
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      await logLoginFailure({ role, phone, reason: "invalid_password" });
       return res.status(400).json({
         success: false,
         message: "Incorrect password"

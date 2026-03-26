@@ -12,6 +12,7 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [records, setRecords] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [logSearch, setLogSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [editId, setEditId] = useState("");
   const [editForm, setEditForm] = useState({});
@@ -24,6 +25,25 @@ const AdminDashboard = () => {
     }),
     []
   );
+
+  const filteredLogs = useMemo(() => {
+    const term = logSearch.trim().toLowerCase();
+    if (!term) return logs;
+    return logs.filter((log) => {
+      const parts = [
+        log.action,
+        log.actorType,
+        log.actorId,
+        log.targetType,
+        log.targetId,
+        JSON.stringify(log.meta || {}),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return parts.includes(term);
+    });
+  }, [logs, logSearch]);
 
   const ensureAuth = () => {
     if (!getToken()) {
@@ -221,6 +241,40 @@ const AdminDashboard = () => {
     }
   };
 
+  const exportAuditCsv = () => {
+    const rows = [
+      ["action", "actorType", "actorId", "targetType", "targetId", "timestamp", "meta"],
+      ...filteredLogs.map((log) => [
+        log.action || "",
+        log.actorType || "",
+        log.actorId || "",
+        log.targetType || "",
+        log.targetId || "",
+        log.createdAt ? new Date(log.createdAt).toISOString() : "",
+        JSON.stringify(log.meta || {}),
+      ]),
+    ];
+
+    const escape = (value) => {
+      const str = String(value ?? "");
+      if (/[",\n]/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const csv = rows.map((row) => row.map(escape).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `medilink_audit_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="admin-dashboard">
       <header className="admin-header">
@@ -359,6 +413,18 @@ const AdminDashboard = () => {
 
       {tab === "audit" && (
         <section className="admin-section">
+          <div className="admin-audit-toolbar">
+            <input
+              className="admin-search"
+              type="text"
+              placeholder="Search logs (action, user, phone...)"
+              value={logSearch}
+              onChange={(e) => setLogSearch(e.target.value)}
+            />
+            <button className="admin-secondary" onClick={exportAuditCsv}>
+              Export CSV
+            </button>
+          </div>
           <div className="admin-table">
             <div className="admin-row admin-head">
               <div>Action</div>
@@ -366,7 +432,7 @@ const AdminDashboard = () => {
               <div>Time</div>
               <div>Meta</div>
             </div>
-            {logs.map((log) => (
+            {filteredLogs.map((log) => (
               <div className="admin-row" key={log._id}>
                 <div>{log.action}</div>
                 <div>{log.targetType} {log.targetId}</div>
@@ -374,7 +440,9 @@ const AdminDashboard = () => {
                 <div className="admin-meta">{JSON.stringify(log.meta || {})}</div>
               </div>
             ))}
-            {logs.length === 0 && <p className="admin-empty">No audit logs yet.</p>}
+            {filteredLogs.length === 0 && (
+              <p className="admin-empty">No audit logs yet.</p>
+            )}
           </div>
         </section>
       )}

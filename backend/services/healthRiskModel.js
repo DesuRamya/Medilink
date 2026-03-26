@@ -131,7 +131,7 @@ const parseBloodPressure = (bp) => {
 const flattenDiseases = (diseases) => {
   if (!diseases || typeof diseases !== "object") return [];
   return Object.entries(diseases).flatMap(([category, items]) => {
-    if (!Array.isArray(items) || items.length === 0) return [category];
+    if (!Array.isArray(items) || items.length === 0) return [];
     return items.map((item) => `${category}: ${item}`);
   });
 };
@@ -184,23 +184,6 @@ const patientToFeatures = (patient = {}) => {
   };
 };
 
-const createLabels = (f) => ({
-  hypertensiveCrisis: f.systolic >= 180 || f.diastolic >= 120,
-  uncontrolledHypertension: (f.systolic >= 140 || f.diastolic >= 90) && !(f.systolic >= 180 || f.diastolic >= 120),
-  stage1Hypertension:
-    (f.systolic >= 130 || f.diastolic >= 80) && !(f.systolic >= 140 || f.diastolic >= 90) && !(f.systolic >= 180 || f.diastolic >= 120),
-  hypotensionRisk: f.systolic < 90 || f.diastolic < 60,
-  severeHyperglycemia: f.glucose >= 300,
-  uncontrolledDiabetes: f.glucose >= 200 && f.glucose < 300,
-  prediabetes: f.glucose >= 140 && f.glucose < 200,
-  hypoglycemiaRisk: f.glucose > 0 && f.glucose < 70,
-  severeAnemia: f.hemoglobin > 0 && f.hemoglobin < 8,
-  anemia: f.hemoglobin >= 8 && f.hemoglobin < 12,
-  cardiovascularEvent:
-    f.age >= 45 && ((f.systolic >= 140 || f.diastolic >= 90) || f.glucose >= 140 || f.smoker === 1 || f.alcoholic === 1),
-  complicationRisk: f.diseaseCount >= 2 || f.diseaseCategoryCount >= 2,
-});
-
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -208,221 +191,60 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const generateTrainingSamples = () => {
-  const rng = seededRng(20260307);
-  const samples = [];
+const MODEL_PATH = path.join(__dirname, "..", "models", "healthrisk-model.json");
+let cachedModel = null;
+let modelLoadError = null;
 
-  const prototypes = [
-    { age: 62, systolic: 188, diastolic: 122, glucose: 320, hemoglobin: 9.5, hasBp: 1, hasDiabetes: 1, smoker: 1, alcoholic: 1, diseaseCount: 6, diseaseCategoryCount: 4 },
-    { age: 55, systolic: 165, diastolic: 102, glucose: 240, hemoglobin: 11.2, hasBp: 1, hasDiabetes: 1, smoker: 0, alcoholic: 0, diseaseCount: 4, diseaseCategoryCount: 2 },
-    { age: 47, systolic: 146, diastolic: 92, glucose: 165, hemoglobin: 12.8, hasBp: 1, hasDiabetes: 1, smoker: 1, alcoholic: 0, diseaseCount: 2, diseaseCategoryCount: 2 },
-    { age: 36, systolic: 132, diastolic: 84, glucose: 130, hemoglobin: 13.5, hasBp: 1, hasDiabetes: 0, smoker: 0, alcoholic: 0, diseaseCount: 1, diseaseCategoryCount: 1 },
-    { age: 28, systolic: 118, diastolic: 76, glucose: 96, hemoglobin: 14.4, hasBp: 0, hasDiabetes: 0, smoker: 0, alcoholic: 0, diseaseCount: 0, diseaseCategoryCount: 0 },
-    { age: 41, systolic: 102, diastolic: 64, glucose: 84, hemoglobin: 7.4, hasBp: 0, hasDiabetes: 0, smoker: 0, alcoholic: 0, diseaseCount: 1, diseaseCategoryCount: 1 },
-    { age: 52, systolic: 126, diastolic: 79, glucose: 62, hemoglobin: 12.6, hasBp: 0, hasDiabetes: 1, smoker: 0, alcoholic: 0, diseaseCount: 1, diseaseCategoryCount: 1 },
-    { age: 67, systolic: 138, diastolic: 88, glucose: 188, hemoglobin: 11.7, hasBp: 1, hasDiabetes: 1, smoker: 1, alcoholic: 0, diseaseCount: 5, diseaseCategoryCount: 3 },
-  ];
-
-  prototypes.forEach((p) => {
-    for (let i = 0; i < 120; i += 1) {
-      const f = {
-        age: clamp(Math.round(randNormal(rng, p.age, 6)), 12, 90),
-        systolic: clamp(Math.round(randNormal(rng, p.systolic, 10)), 75, 230),
-        diastolic: clamp(Math.round(randNormal(rng, p.diastolic, 7)), 45, 140),
-        glucose: clamp(Math.round(randNormal(rng, p.glucose, 30)), 45, 450),
-        hemoglobin: clamp(Number(randNormal(rng, p.hemoglobin, 1.0).toFixed(1)), 5.2, 18.5),
-        hasBp: p.hasBp,
-        hasDiabetes: p.hasDiabetes,
-        smoker: rng() < 0.18 ? 1 - p.smoker : p.smoker,
-        alcoholic: rng() < 0.15 ? 1 - p.alcoholic : p.alcoholic,
-        diseaseCount: clamp(Math.round(randNormal(rng, p.diseaseCount, 1.2)), 0, 12),
-        diseaseCategoryCount: clamp(Math.round(randNormal(rng, p.diseaseCategoryCount, 0.8)), 0, 7),
-      };
-
-      const labels = createLabels(f);
-      samples.push({ features: f, labels });
+const loadTrainedModel = () => {
+  if (cachedModel || modelLoadError) return cachedModel;
+  try {
+    if (!fs.existsSync(MODEL_PATH)) {
+      modelLoadError = new Error(`HealthRiskModel: Missing model file at ${MODEL_PATH}`);
+      return null;
     }
-  });
-
-  return samples;
-};
-
-const loadTrainingSamplesFromCsv = () => {
-  const csvPath = path.join(__dirname, "..", "data", "training-samples.csv");
-  if (!fs.existsSync(csvPath)) {
-    throw new Error(`Training CSV not found at ${csvPath}`);
+    const raw = fs.readFileSync(MODEL_PATH, "utf8");
+    cachedModel = JSON.parse(raw);
+    return cachedModel;
+  } catch (err) {
+    modelLoadError = err;
+    return null;
   }
+};
 
-  const raw = fs.readFileSync(csvPath, "utf8").trim();
-  if (!raw) return [];
+const sigmoid = (value) => {
+  if (value >= 0) {
+    const z = Math.exp(-value);
+    return 1 / (1 + z);
+  }
+  const z = Math.exp(value);
+  return z / (1 + z);
+};
 
-  const [headerLine, ...lines] = raw.split(/\r?\n/);
-  const headers = headerLine.split(",").map((h) => h.trim());
-  const labelPrefix = "label_";
-
-  const featureKeys = headers.filter((h) => !h.startsWith(labelPrefix));
-  const labelKeys = headers
-    .filter((h) => h.startsWith(labelPrefix))
-    .map((h) => h.slice(labelPrefix.length));
-
-  return lines.map((line) => {
-    const cols = line.split(",").map((c) => c.trim());
-    const features = {};
-    const labels = {};
-
-    featureKeys.forEach((key, idx) => {
-      const value = cols[idx];
-      features[key] = value === "" ? null : Number(value);
-    });
-
-    labelKeys.forEach((key, i) => {
-      const idx = featureKeys.length + i;
-      const value = cols[idx];
-      labels[key] = Number(value) === 1;
-    });
-
-    return { features, labels };
+const buildModelVector = (features, model) => {
+  const means = model?.standardization?.means || {};
+  const stds = model?.standardization?.stds || {};
+  return (model?.features || FEATURES).map((feature) => {
+    const mean = means[feature] ?? 0;
+    const std = stds[feature] ?? 1;
+    const value = features[feature];
+    const actual = value === null || value === undefined ? mean : value;
+    return (actual - mean) / (std || 1);
   });
 };
 
-const gaussianLogPdf = (x, mean, variance) => {
-  const v = Math.max(variance, 1e-6);
-  return -0.5 * Math.log(2 * Math.PI * v) - ((x - mean) ** 2) / (2 * v);
-};
-
-const trainBinaryGaussianNB = (samples, targetKey) => {
-  const classBuckets = { 0: [], 1: [] };
-
-  samples.forEach((sample) => {
-    const cls = sample.labels[targetKey] ? 1 : 0;
-    classBuckets[cls].push(sample.features);
-  });
-
-  const total = samples.length;
-  const priors = {
-    0: (classBuckets[0].length + 1) / (total + 2),
-    1: (classBuckets[1].length + 1) / (total + 2),
+const scoreLabel = (model, labelKey, vector) => {
+  const labelModel = model?.models?.[labelKey];
+  if (!labelModel) return null;
+  const weights = labelModel.weights || [];
+  let score = labelModel.bias || 0;
+  for (let i = 0; i < weights.length; i += 1) {
+    score += weights[i] * (vector[i] ?? 0);
+  }
+  return {
+    probability: sigmoid(score),
+    threshold: labelModel.threshold ?? 0.5,
   };
-
-  const stats = { 0: {}, 1: {} };
-  [0, 1].forEach((cls) => {
-    FEATURES.forEach((feature) => {
-      const values = classBuckets[cls].map((row) => row[feature]);
-      const mean = values.reduce((sum, v) => sum + v, 0) / Math.max(values.length, 1);
-      const variance =
-        values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / Math.max(values.length, 1);
-      stats[cls][feature] = { mean, variance: Math.max(variance, 1e-3) };
-    });
-  });
-
-  return { priors, stats, targetKey };
 };
-
-const predictBinaryProbability = (model, featureVector) => {
-  const scores = { 0: Math.log(model.priors[0]), 1: Math.log(model.priors[1]) };
-
-  [0, 1].forEach((cls) => {
-    FEATURES.forEach((feature) => {
-      const value = featureVector[feature];
-      const stat = model.stats[cls][feature];
-      scores[cls] += gaussianLogPdf(value, stat.mean, stat.variance);
-    });
-  });
-
-  const maxLog = Math.max(scores[0], scores[1]);
-  const exp0 = Math.exp(scores[0] - maxLog);
-  const exp1 = Math.exp(scores[1] - maxLog);
-  return exp1 / (exp0 + exp1);
-};
-
-const TRAINING_SAMPLES = loadTrainingSamplesFromCsv();
-const CONDITION_MODELS = CONDITION_CATALOG.reduce((acc, entry) => {
-  acc[entry.key] = trainBinaryGaussianNB(TRAINING_SAMPLES, entry.key);
-  return acc;
-}, {});
-
-const globalFeatureMeans = FEATURES.reduce((acc, feature) => {
-  acc[feature] =
-    TRAINING_SAMPLES.reduce((sum, sample) => sum + sample.features[feature], 0) /
-    TRAINING_SAMPLES.length;
-  return acc;
-}, {});
-
-const evaluateModel = () => {
-  if (!TRAINING_SAMPLES.length) {
-    console.warn("HealthRiskModel: No training samples available for evaluation.");
-    return;
-  }
-
-  const rng = seededRng(20260307);
-  const shuffled = [...TRAINING_SAMPLES];
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rng() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-
-  const splitIndex = Math.floor(shuffled.length * 0.8);
-  const trainSet = shuffled.slice(0, splitIndex);
-  const testSet = shuffled.slice(splitIndex);
-
-  const evalModels = CONDITION_CATALOG.reduce((acc, entry) => {
-    acc[entry.key] = trainBinaryGaussianNB(trainSet, entry.key);
-    return acc;
-  }, {});
-
-  const totals = CONDITION_CATALOG.reduce((acc, entry) => {
-    acc[entry.key] = { correct: 0, total: 0 };
-    return acc;
-  }, {});
-
-  const thresholds = {};
-  CONDITION_CATALOG.forEach((entry) => {
-    let bestThreshold = 0.5;
-    let bestAccuracy = -1;
-    for (let t = 0.01; t <= 0.99; t += 0.01) {
-      let correct = 0;
-      let total = 0;
-      trainSet.forEach((sample) => {
-        const probability = predictBinaryProbability(evalModels[entry.key], sample.features);
-        const predicted = probability >= t;
-        const actual = Boolean(sample.labels[entry.key]);
-        total += 1;
-        if (predicted === actual) correct += 1;
-      });
-      const accuracy = total ? correct / total : 0;
-      if (accuracy > bestAccuracy) {
-        bestAccuracy = accuracy;
-        bestThreshold = t;
-      }
-    }
-    thresholds[entry.key] = bestThreshold;
-  });
-
-  testSet.forEach((sample) => {
-    CONDITION_CATALOG.forEach((entry) => {
-      const probability = predictBinaryProbability(evalModels[entry.key], sample.features);
-      const predicted = probability >= thresholds[entry.key];
-      const actual = Boolean(sample.labels[entry.key]);
-      totals[entry.key].total += 1;
-      if (predicted === actual) totals[entry.key].correct += 1;
-    });
-  });
-
-  const perLabel = CONDITION_CATALOG.map((entry) => {
-    const stats = totals[entry.key];
-    const accuracy = stats.total ? stats.correct / stats.total : 0;
-    return { key: entry.key, condition: entry.condition, accuracy };
-  });
-
-  const macroAccuracy =
-    perLabel.reduce((sum, item) => sum + item.accuracy, 0) / perLabel.length;
-
-  console.log(
-    `HealthRiskModel overall accuracy: ${(macroAccuracy * 100).toFixed(1)}%`
-  );
-};
-
-evaluateModel();
 
 const enrichReasons = (patient, conditionKey) => {
   const reasons = [];
@@ -466,7 +288,7 @@ const deriveRuleHints = (features) => {
   const hints = [];
 
   if (features.systolic !== null && features.diastolic !== null) {
-    if (features.systolic >= 180 || features.diastolic >= 120) {
+    if (features.systolic > 180 || features.diastolic > 120) {
       hints.push({ key: "hypertensiveCrisis", minProbability: 0.86 });
     } else if (features.systolic >= 140 || features.diastolic >= 90) {
       hints.push({ key: "uncontrolledHypertension", minProbability: 0.74 });
@@ -478,11 +300,11 @@ const deriveRuleHints = (features) => {
   }
 
   if (features.glucose !== null) {
-    if (features.glucose >= 300) {
+    if (features.glucose >= 200) {
       hints.push({ key: "severeHyperglycemia", minProbability: 0.85 });
-    } else if (features.glucose >= 200) {
+    } else if (features.glucose >= 126) {
       hints.push({ key: "uncontrolledDiabetes", minProbability: 0.72 });
-    } else if (features.glucose >= 140) {
+    } else if (features.glucose >= 100) {
       hints.push({ key: "prediabetes", minProbability: 0.56 });
     } else if (features.glucose < 70) {
       hints.push({ key: "hypoglycemiaRisk", minProbability: 0.84 });
@@ -497,7 +319,7 @@ const deriveRuleHints = (features) => {
     }
   }
 
-  if (features.diseaseCount >= 1) {
+  if (features.diseaseCount >= 2 || features.diseaseCategoryCount >= 2) {
     hints.push({ key: "complicationRisk", minProbability: 0.55 });
   }
 
@@ -626,30 +448,65 @@ export const predictHealthRisk = (patient = {}) => {
       return fallbackRulePrediction(patient);
     }
 
-    const modelInput = {};
-    FEATURES.forEach((feature) => {
-      const value = features[feature];
-      modelInput[feature] = value === null || value === undefined ? globalFeatureMeans[feature] : value;
-    });
+    const trainedModel = loadTrainedModel();
+    if (!trainedModel) {
+      return fallbackRulePrediction(patient);
+    }
+
+    const modelVector = buildModelVector(features, trainedModel);
+    const availability = {
+      hasBp: features.systolic !== null && features.diastolic !== null,
+      hasGlucose: features.glucose !== null,
+      hasHemoglobin: features.hemoglobin !== null,
+      hasAge: features.age !== null,
+    };
+
+    const bpKeys = new Set(["hypertensiveCrisis", "uncontrolledHypertension", "stage1Hypertension", "hypotensionRisk"]);
+    const glucoseKeys = new Set(["severeHyperglycemia", "uncontrolledDiabetes", "prediabetes", "hypoglycemiaRisk"]);
+    const hemoglobinKeys = new Set(["severeAnemia", "anemia"]);
 
     const rawPredictions = CONDITION_CATALOG.map((catalogEntry) => {
-      const probability = predictBinaryProbability(CONDITION_MODELS[catalogEntry.key], modelInput);
+      const scored = scoreLabel(trainedModel, catalogEntry.key, modelVector);
+      if (!scored) {
+        return { catalogEntry, probability: 0, threshold: 1, available: false };
+      }
+
+      let available = true;
+      if (bpKeys.has(catalogEntry.key)) {
+        available = availability.hasBp;
+      } else if (glucoseKeys.has(catalogEntry.key)) {
+        available = availability.hasGlucose;
+      } else if (hemoglobinKeys.has(catalogEntry.key)) {
+        available = availability.hasHemoglobin;
+      } else if (catalogEntry.key === "complicationRisk") {
+        available = features.diseaseCount > 0 || features.diseaseCategoryCount > 0;
+      } else if (catalogEntry.key === "cardiovascularEvent") {
+        available = availability.hasAge;
+      }
+
       return {
         catalogEntry,
-        probability,
+        probability: scored.probability,
+        threshold: scored.threshold,
+        available,
       };
     });
 
     const ruleHints = deriveRuleHints(features);
     ruleHints.forEach((hint) => {
       const target = rawPredictions.find((entry) => entry.catalogEntry.key === hint.key);
-      if (target) {
+      if (target && target.available) {
         target.probability = Math.max(target.probability, hint.minProbability);
       }
     });
 
-    const selected = rawPredictions
-      .filter((entry) => entry.probability >= 0.33)
+    const availablePredictions = rawPredictions.filter((entry) => entry.available);
+    if (availablePredictions.length === 0) {
+      return fallbackRulePrediction(patient);
+    }
+
+    const selectedRaw = availablePredictions
+      .filter((entry) => entry.probability >= entry.threshold)
       .sort((a, b) => {
         if (urgencyRank[b.catalogEntry.urgency] !== urgencyRank[a.catalogEntry.urgency]) {
           return urgencyRank[b.catalogEntry.urgency] - urgencyRank[a.catalogEntry.urgency];
@@ -657,7 +514,66 @@ export const predictHealthRisk = (patient = {}) => {
         return b.probability - a.probability;
       });
 
-    const finalPredictions = (selected.length > 0 ? selected : rawPredictions.sort((a, b) => b.probability - a.probability).slice(0, 1)).map(
+    const pickTopByGroup = (entries, keys) => {
+      const filtered = entries.filter((entry) => keys.includes(entry.catalogEntry.key));
+      if (filtered.length <= 1) return filtered;
+      return filtered
+        .sort((a, b) => {
+          if (urgencyRank[b.catalogEntry.urgency] !== urgencyRank[a.catalogEntry.urgency]) {
+            return urgencyRank[b.catalogEntry.urgency] - urgencyRank[a.catalogEntry.urgency];
+          }
+          return b.probability - a.probability;
+        })
+        .slice(0, 1);
+    };
+
+    const classifyBpKey = (f) => {
+      if (f.systolic === null || f.diastolic === null) return null;
+      if (f.systolic > 180 || f.diastolic > 120) return "hypertensiveCrisis";
+      if (f.systolic >= 140 || f.diastolic >= 90) return "uncontrolledHypertension"; // Stage 2
+      if (f.systolic >= 130 || f.diastolic >= 80) return "stage1Hypertension";
+      if (f.systolic < 90 || f.diastolic < 60) return "hypotensionRisk";
+      return null;
+    };
+
+    const classifyGlucoseKey = (f) => {
+      if (f.glucose === null) return null;
+      if (f.glucose >= 200) return "severeHyperglycemia";
+      if (f.glucose >= 126) return "uncontrolledDiabetes";
+      if (f.glucose >= 100) return "prediabetes";
+      if (f.glucose < 70) return "hypoglycemiaRisk";
+      return null;
+    };
+
+    const bpGroup = ["hypertensiveCrisis", "uncontrolledHypertension", "stage1Hypertension", "hypotensionRisk"];
+    const glucoseGroup = ["severeHyperglycemia", "uncontrolledDiabetes", "prediabetes", "hypoglycemiaRisk"];
+    const anemiaGroup = ["severeAnemia", "anemia"];
+
+    const groupKeys = new Set([...bpGroup, ...glucoseGroup, ...anemiaGroup]);
+    const pickByKey = (entries, key) => entries.filter((entry) => entry.catalogEntry.key === key);
+
+    const bpKey = classifyBpKey(features);
+    const glucoseKey = classifyGlucoseKey(features);
+
+    const bpSelected = bpKey ? pickByKey(availablePredictions, bpKey) : pickTopByGroup(selectedRaw, bpGroup);
+    const glucoseSelected = glucoseKey
+      ? pickByKey(availablePredictions, glucoseKey)
+      : pickTopByGroup(selectedRaw, glucoseGroup);
+    const anemiaSelected = pickTopByGroup(selectedRaw, anemiaGroup);
+
+    const groupFiltered = [...bpSelected, ...glucoseSelected, ...anemiaSelected].filter(Boolean);
+    const others = selectedRaw.filter((entry) => !groupKeys.has(entry.catalogEntry.key));
+    const selected = [...groupFiltered, ...others].sort((a, b) => {
+      if (urgencyRank[b.catalogEntry.urgency] !== urgencyRank[a.catalogEntry.urgency]) {
+        return urgencyRank[b.catalogEntry.urgency] - urgencyRank[a.catalogEntry.urgency];
+      }
+      return b.probability - a.probability;
+    });
+
+    const finalPredictions = (selected.length > 0
+      ? selected
+      : availablePredictions.sort((a, b) => b.probability - a.probability).slice(0, 1)
+    ).map(
       ({ catalogEntry, probability }) => ({
         condition: catalogEntry.condition,
         riskPercentage: normalizeProbability(probability),
@@ -680,11 +596,11 @@ export const predictHealthRisk = (patient = {}) => {
 
     return {
       generatedAt: new Date().toISOString(),
-      modelType: "ML model (Gaussian Naive Bayes, multi-label)",
+      modelType: "ML model (Python-trained logistic regression, multi-label)",
       trainingInfo: {
-        trainedAt: "2026-03-07",
-        trainingSamples: TRAINING_SAMPLES.length,
-        features: FEATURES,
+        trainedAt: trainedModel.generatedAt || "Unknown",
+        trainingSamples: trainedModel.training?.samples ?? "Unknown",
+        features: trainedModel.features || FEATURES,
       },
       inputsUsed: buildUsedInputs(patient),
       needsImmediateMedicalAppointment,

@@ -182,6 +182,18 @@
   border-radius: 8px;
 }
 
+.form-hint {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.form-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--error);
+}
+
 /* ===============================
    DISEASES – STRICT LEFT ALIGNMENT
    =============================== */

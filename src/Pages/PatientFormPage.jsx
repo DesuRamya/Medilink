@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createWorker } from 'tesseract.js';
 import 'react-phone-number-input/style.css';
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
@@ -85,6 +86,10 @@ export default function PatientFormPage() {
   const [prescriptionPreview, setPrescriptionPreview] = useState(
     patientToEdit?.prescriptionImage ? apiUrl(patientToEdit.prescriptionImage) : ""
   );
+  const [reportProcessing, setReportProcessing] = useState(false);
+  const [reportError, setReportError] = useState("");
+  const [reportPreview, setReportPreview] = useState("");
+  const [reportExtracted, setReportExtracted] = useState(null);
 
   /* ---------------- HELPERS ---------------- */
 
@@ -161,6 +166,328 @@ export default function PatientFormPage() {
     const reader = new FileReader();
     reader.onload = () => setPrescriptionPreview(reader.result || "");
     reader.readAsDataURL(file);
+  };
+
+  const normalizeDateToInput = (raw) => {
+    if (!raw) return "";
+    const value = raw.trim();
+    const isoMatch = value.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (isoMatch) {
+      const [, y, m, d] = isoMatch;
+      return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+    const dmMatch = value.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmMatch) {
+      const [, d, m, y] = dmMatch;
+      return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+    return "";
+  };
+
+  const normalizePersonName = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const todayInputDate = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const parseReportValues = (text) => {
+    const rawText = String(text || "");
+    const cleaned = rawText.replace(/\s+/g, " ").trim();
+    const result = {
+      patientName: "",
+      hemoglobin: "",
+      bp: "",
+      glucose: "",
+      totalCholesterol: "",
+      ldl: "",
+      hdl: "",
+      tsh: "",
+      creatinine: "",
+      egfr: "",
+      bmi: "",
+      reportDate: "",
+    };
+
+    const lines = rawText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const nameLine = lines.find((line) => /patient\s*name/i.test(line));
+    if (nameLine) {
+      const lineMatch = nameLine.match(/patient\s*name[^a-zA-Z]{0,10}(.+)/i);
+      if (lineMatch) {
+        result.patientName = lineMatch[1].trim();
+      }
+    }
+    if (!result.patientName) {
+      const nameMatch = cleaned.match(/\bpatient\s*name\b[^a-zA-Z]{0,10}([a-zA-Z .'-]{2,})(?=\s+(report|date|age|gender|vitals)\b|$)/i);
+      if (nameMatch) {
+        result.patientName = nameMatch[1].trim();
+      }
+    }
+
+    const labeledBpMatch = cleaned.match(/\b(blood\s*pressure|bp)\b[^0-9]{0,12}(\d{2,3})\s*\/\s*(\d{2,3})/i);
+    if (labeledBpMatch) {
+      result.bp = `${labeledBpMatch[2]}/${labeledBpMatch[3]}`;
+    } else {
+      const bpMatch = cleaned.match(/(\d{2,3})\s*\/\s*(\d{2,3})(?!\s*\/\s*\d{4})/);
+      if (bpMatch) {
+        result.bp = `${bpMatch[1]}/${bpMatch[2]}`;
+      }
+    }
+
+    const hbMatch = cleaned.match(/\b(hemoglobin|haemoglobin|hgb|hb)\b[^0-9]{0,10}(\d{1,2}(?:\.\d)?)/i);
+    if (hbMatch) {
+      result.hemoglobin = hbMatch[2];
+    }
+
+    const glucoseMatch = cleaned.match(/\b(glucose|blood\s*sugar|fbs|rbs|random|fasting|diabetic)\b[^0-9]{0,12}(\d{2,3})/i);
+    if (glucoseMatch) {
+      result.glucose = glucoseMatch[2];
+    }
+
+    const totalCholMatch = cleaned.match(/\b(total\s*cholesterol|cholesterol\s*\(total\)|\btotal\s*chol\b|\bTC\b)\b[^0-9]{0,12}(\d{2,3})/i);
+    if (totalCholMatch) {
+      result.totalCholesterol = totalCholMatch[2];
+    } else {
+      const cholMatch = cleaned.match(/\bcholesterol\b[^0-9]{0,12}(\d{2,3})/i);
+      if (cholMatch) {
+        result.totalCholesterol = cholMatch[1];
+      }
+    }
+
+    const ldlMatch = cleaned.match(/\bLDL\b[^0-9]{0,10}(\d{2,3})/i);
+    if (ldlMatch) {
+      result.ldl = ldlMatch[1];
+    }
+
+    const hdlMatch = cleaned.match(/\bHDL\b[^0-9]{0,10}(\d{2,3})/i);
+    if (hdlMatch) {
+      result.hdl = hdlMatch[1];
+    }
+
+    const tshMatch = cleaned.match(/\bTSH\b[^0-9]{0,10}(\d{1,2}(?:\.\d+)?)/i);
+    if (tshMatch) {
+      result.tsh = tshMatch[1];
+    }
+
+    const creatinineMatch = cleaned.match(/\b(creatinine|serum\s*creatinine)\b[^0-9]{0,10}(\d{1,2}(?:\.\d+)?)/i);
+    if (creatinineMatch) {
+      result.creatinine = creatinineMatch[2];
+    }
+
+    const egfrMatch = cleaned.match(/\b(eGFR|GFR)\b[^0-9]{0,10}(\d{1,3})/i);
+    if (egfrMatch) {
+      result.egfr = egfrMatch[2];
+    }
+
+    const bmiMatch = cleaned.match(/\bBMI\b[^0-9]{0,10}(\d{1,2}(?:\.\d+)?)/i);
+    if (bmiMatch) {
+      result.bmi = bmiMatch[1];
+    }
+
+    const dateMatch = cleaned.match(/\b(\d{1,2}[/-]\d{1,2}[/-]\d{4}|\d{4}[/-]\d{1,2}[/-]\d{1,2})\b/);
+    if (dateMatch) {
+      result.reportDate = normalizeDateToInput(dateMatch[1]);
+    }
+
+    return result;
+  };
+
+  const applyAutoDiseaseSelections = (extracted) => {
+    const selections = [];
+    const bpMatch = extracted.bp?.match(/(\d{2,3})\s*\/\s*(\d{2,3})/);
+    const systolic = bpMatch ? Number(bpMatch[1]) : null;
+    const diastolic = bpMatch ? Number(bpMatch[2]) : null;
+    const hb = extracted.hemoglobin ? Number(extracted.hemoglobin) : null;
+    const glucose = extracted.glucose ? Number(extracted.glucose) : null;
+    const totalChol = extracted.totalCholesterol ? Number(extracted.totalCholesterol) : null;
+    const ldl = extracted.ldl ? Number(extracted.ldl) : null;
+    const hdl = extracted.hdl ? Number(extracted.hdl) : null;
+    const tsh = extracted.tsh ? Number(extracted.tsh) : null;
+    const creatinine = extracted.creatinine ? Number(extracted.creatinine) : null;
+    const egfr = extracted.egfr ? Number(extracted.egfr) : null;
+    const bmiFromReport = extracted.bmi ? Number(extracted.bmi) : null;
+    const gender = String(form.gender || "").toLowerCase();
+
+    if (Number.isFinite(systolic) && Number.isFinite(diastolic)) {
+      if (systolic > 180 || diastolic > 120) {
+        selections.push({ category: "cardiovascular", disease: "Hypertension (High Blood Pressure)" });
+      } else if (systolic >= 140 || diastolic >= 90) {
+        selections.push({ category: "cardiovascular", disease: "Hypertension (High Blood Pressure)" });
+      } else if (systolic >= 130 || diastolic >= 80) {
+        selections.push({ category: "cardiovascular", disease: "Hypertension (High Blood Pressure)" });
+      } else if (systolic < 90 || diastolic < 60) {
+        selections.push({ category: "cardiovascular", disease: "Hypotension (Low Blood Pressure)" });
+      }
+    }
+
+    if (Number.isFinite(glucose) && glucose >= 126) {
+      selections.push({ category: "endocrine", disease: "Diabetes Type 2" });
+    }
+
+    if (Number.isFinite(hb)) {
+      const male = gender.includes("male");
+      const female = gender.includes("female");
+      const anemiaThreshold = male ? 13 : female ? 12 : 12;
+      if (hb < anemiaThreshold) {
+        selections.push({ category: "blood", disease: "Anemia" });
+      }
+    }
+
+    if (Number.isFinite(totalChol) && totalChol >= 200) {
+      selections.push({ category: "cardiovascular", disease: "High Cholesterol" });
+    } else if (Number.isFinite(ldl) && ldl >= 130) {
+      selections.push({ category: "cardiovascular", disease: "High Cholesterol" });
+    } else if (Number.isFinite(hdl)) {
+      const lowHdl = (gender.includes("male") && hdl < 40) || (gender.includes("female") && hdl < 50);
+      if (lowHdl) {
+        selections.push({ category: "cardiovascular", disease: "High Cholesterol" });
+      }
+    }
+
+    if (Number.isFinite(tsh) && (tsh < 0.4 || tsh > 4.5)) {
+      selections.push({ category: "endocrine", disease: "Thyroid Disorder (Hypothyroid/Hyperthyroid)" });
+    }
+
+    const heightM = form.height ? Number(form.height) / 100 : null;
+    const weightKg = form.weight ? Number(form.weight) : null;
+    const bmi = Number.isFinite(bmiFromReport)
+      ? bmiFromReport
+      : Number.isFinite(heightM) && Number.isFinite(weightKg) && heightM > 0
+        ? Number((weightKg / (heightM * heightM)).toFixed(1))
+        : null;
+    if (Number.isFinite(bmi) && bmi >= 25) {
+      selections.push({ category: "endocrine", disease: "Obesity" });
+    }
+
+    if ((Number.isFinite(egfr) && egfr < 60) || (Number.isFinite(creatinine) && creatinine >= 1.3)) {
+      selections.push({ category: "kidney", disease: "Chronic Kidney Disease (CKD)" });
+    }
+
+    if (selections.length === 0) return;
+
+    setSelectedCategories((prev) => {
+      const next = { ...prev };
+      delete next.No_such_Disease;
+      delete next.noDisease;
+      selections.forEach((sel) => {
+        next[sel.category] = true;
+      });
+      return next;
+    });
+
+    setSpecifics((prev) => {
+      const next = { ...prev };
+      selections.forEach((sel) => {
+        next[sel.category] = { ...(next[sel.category] || {}), [sel.disease]: true };
+      });
+      return next;
+    });
+  };
+
+  const loadImageFromDataUrl = (dataUrl) =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Unable to load image data."));
+      img.src = dataUrl;
+    });
+
+  const rasterizeSvg = async (dataUrl, width = 1400, height = 900) => {
+    const img = await loadImageFromDataUrl(dataUrl);
+    const canvas = document.createElement("canvas");
+    canvas.width = width || img.naturalWidth || 1400;
+    canvas.height = height || img.naturalHeight || 900;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  };
+
+  const handleReportUpload = async (e) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+    setReportError("");
+    setReportProcessing(true);
+
+    const reader = new FileReader();
+    reader.onload = () => setReportPreview(reader.result || "");
+    reader.readAsDataURL(file);
+
+    try {
+      let inputForOcr = file;
+      if (file.type === "image/svg+xml" || file.name?.toLowerCase().endsWith(".svg")) {
+        const svgDataUrl = await new Promise((resolve, reject) => {
+          const svgReader = new FileReader();
+          svgReader.onload = () => resolve(svgReader.result);
+          svgReader.onerror = () => reject(new Error("Unable to read SVG file."));
+          svgReader.readAsDataURL(file);
+        });
+        inputForOcr = await rasterizeSvg(svgDataUrl);
+      }
+
+      const worker = await createWorker("eng", 1, {
+        logger: () => {},
+        workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js",
+        corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js",
+        langPath: "https://tessdata.projectnaptha.com/4.0.0",
+      });
+      const { data } = await worker.recognize(inputForOcr);
+      await worker.terminate();
+      const extracted = parseReportValues(data?.text || "");
+      setReportExtracted(extracted);
+
+      const formName = normalizePersonName(form.name);
+      const reportName = normalizePersonName(extracted.patientName);
+      if (!formName) {
+        setReportError("Please enter the patient name before uploading a report.");
+        return;
+      }
+      if (!reportName || !(reportName === formName || reportName.includes(formName) || formName.includes(reportName))) {
+        setReportError("Patient name does not match the report. Please add the correct person's report.");
+        return;
+      }
+
+      applyAutoDiseaseSelections(extracted);
+
+      setForm((prev) => {
+        const next = { ...prev };
+        const fallbackDate = extracted.reportDate || todayInputDate();
+        if (extracted.bp && !prev.bp) {
+          next.bp = extracted.bp;
+          next.hasBp = "Yes";
+          next.bpTestDate = fallbackDate;
+        }
+        if (extracted.glucose && !prev.diabetic) {
+          next.diabetic = extracted.glucose;
+          next.hasDiabetics = "Yes";
+          next.diabeticTestDate = fallbackDate;
+        }
+        if (extracted.hemoglobin && !prev.hemoglobin) {
+          next.hemoglobin = extracted.hemoglobin;
+          next.hbTestDate = fallbackDate;
+        }
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+      setReportError(
+        `Could not read the report image. ${err?.message ? err.message : "Please upload a clearer image."}`
+      );
+    } finally {
+      setReportProcessing(false);
+    }
   };
 
 
@@ -415,6 +742,33 @@ export default function PatientFormPage() {
       <form onSubmit={handleSubmit} noValidate>
         <table className="formTable">
           <tbody>
+
+            <tr>
+              <td className="labelCell">
+                <label htmlFor="reportImage">Medical Report Image (Auto-fill)</label>
+              </td>
+              <td className="inputCell">
+                <input
+                  id="reportImage"
+                  name="reportImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReportUpload}
+                />
+                {reportProcessing && <p className="form-hint">Extracting data from report...</p>}
+                {reportError && <p className="form-error">{reportError}</p>}
+                {reportExtracted && (
+                  <p className="form-hint">
+                    Detected: BP {reportExtracted.bp || "—"}, Hb {reportExtracted.hemoglobin || "—"}, Glucose {reportExtracted.glucose || "—"}, Date {reportExtracted.reportDate || "—"}
+                  </p>
+                )}
+                {reportPreview && (
+                  <div className="prescription-preview">
+                    <img src={reportPreview} alt="Medical report preview" />
+                  </div>
+                )}
+              </td>
+            </tr>
 
             <InputField label="Name*" name="name" value={form.name} onChange={handleInputChange} error={touched.name && errors.name} />
             <InputField label="Date of Birth*" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleInputChange} error={touched.dateOfBirth && errors.dateOfBirth}/>

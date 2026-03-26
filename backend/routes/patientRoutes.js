@@ -69,6 +69,18 @@ router.post("/login", async (req, res) => {
 
     // ✅ validations
     if (!phone || !password) {
+      try {
+        await AuditLog.create({
+          actorType: "patient",
+          actorId: null,
+          action: "login_failed",
+          targetType: "patient",
+          targetId: `phone:${phone || "unknown"}`,
+          meta: { phone: phone || null, reason: "missing_fields" },
+        });
+      } catch (error) {
+        console.error("Audit log error:", error?.message || error);
+      }
       return res.status(400).json({
         success: false,
         message: "Phone number and password are required",
@@ -79,6 +91,18 @@ router.post("/login", async (req, res) => {
     const patient = await Patient.findOne({ phone });
 
     if (!patient) {
+      try {
+        await AuditLog.create({
+          actorType: "patient",
+          actorId: null,
+          action: "login_failed",
+          targetType: "patient",
+          targetId: `phone:${phone}`,
+          meta: { phone, reason: "phone_not_registered" },
+        });
+      } catch (error) {
+        console.error("Audit log error:", error?.message || error);
+      }
       return res.status(404).json({
         success: false,
         message: "Patient not found with this phone number",
@@ -86,6 +110,18 @@ router.post("/login", async (req, res) => {
     }
 
     if (patient.isActive === false) {
+      try {
+        await AuditLog.create({
+          actorType: "patient",
+          actorId: String(patient._id),
+          action: "login_failed",
+          targetType: "patient",
+          targetId: String(patient._id),
+          meta: { phone, reason: "account_disabled" },
+        });
+      } catch (error) {
+        console.error("Audit log error:", error?.message || error);
+      }
       return res.status(403).json({
         success: false,
         message: "Patient account is disabled",
@@ -94,6 +130,18 @@ router.post("/login", async (req, res) => {
 
     // ✅ check password (plain text check)
     if (patient.password !== password) {
+      try {
+        await AuditLog.create({
+          actorType: "patient",
+          actorId: String(patient._id),
+          action: "login_failed",
+          targetType: "patient",
+          targetId: String(patient._id),
+          meta: { phone, reason: "invalid_password" },
+        });
+      } catch (error) {
+        console.error("Audit log error:", error?.message || error);
+      }
       return res.status(401).json({
         success: false,
         message: "Invalid password",
