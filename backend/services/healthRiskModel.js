@@ -505,14 +505,12 @@ export const predictHealthRisk = (patient = {}) => {
       return fallbackRulePrediction(patient);
     }
 
-    const selectedRaw = availablePredictions
-      .filter((entry) => entry.probability >= entry.threshold)
-      .sort((a, b) => {
-        if (urgencyRank[b.catalogEntry.urgency] !== urgencyRank[a.catalogEntry.urgency]) {
-          return urgencyRank[b.catalogEntry.urgency] - urgencyRank[a.catalogEntry.urgency];
-        }
-        return b.probability - a.probability;
-      });
+    const selectedRaw = availablePredictions.sort((a, b) => {
+      if (urgencyRank[b.catalogEntry.urgency] !== urgencyRank[a.catalogEntry.urgency]) {
+        return urgencyRank[b.catalogEntry.urgency] - urgencyRank[a.catalogEntry.urgency];
+      }
+      return b.probability - a.probability;
+    });
 
     const pickTopByGroup = (entries, keys) => {
       const filtered = entries.filter((entry) => keys.includes(entry.catalogEntry.key));
@@ -570,19 +568,14 @@ export const predictHealthRisk = (patient = {}) => {
       return b.probability - a.probability;
     });
 
-    const finalPredictions = (selected.length > 0
-      ? selected
-      : availablePredictions.sort((a, b) => b.probability - a.probability).slice(0, 1)
-    ).map(
-      ({ catalogEntry, probability }) => ({
-        condition: catalogEntry.condition,
-        riskPercentage: normalizeProbability(probability),
-        urgency: catalogEntry.urgency,
-        details: catalogEntry.details,
-        immediateCare: catalogEntry.immediateCare,
-        reasons: enrichReasons(patient, catalogEntry.key),
-      })
-    );
+    const finalPredictions = selected.map(({ catalogEntry, probability }) => ({
+      condition: catalogEntry.condition,
+      riskPercentage: normalizeProbability(probability),
+      urgency: catalogEntry.urgency,
+      details: catalogEntry.details,
+      immediateCare: catalogEntry.immediateCare,
+      reasons: enrichReasons(patient, catalogEntry.key),
+    }));
 
     finalPredictions.sort((a, b) => {
       if (urgencyRank[b.urgency] !== urgencyRank[a.urgency]) {

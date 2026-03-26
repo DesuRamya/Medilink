@@ -6,7 +6,7 @@
   <g font-family="Arial, sans-serif" font-size="30" fill="#111827">
     <text x="60" y="210">Patient Name: Prans</text>
     <text x="60" y="255">Report Date: 26/03/2026</text>
-    <text x="60" y="300">Age / Gender: 45 / Male</text>
+    <text x="60" y="300">Age / Gender: 20 / Female</text>
 
     <text x="60" y="380" font-weight="700">Vitals &amp; Lab Summary</text>
     <text x="60" y="430">Blood Pressure (BP): 138/88 mmHg</text>
